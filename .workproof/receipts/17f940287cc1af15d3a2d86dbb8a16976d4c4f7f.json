@@ -1,0 +1,133 @@
+{
+  "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYWdlbnQiOiJnbG0iLCJhaV9sZXZlbCI6ImFzc2lzdGVkIiwiYmFzZV9zaGEiOiJmY2JlZmJhODY2M2ZhZThmYzE0Zjc3ZWVhOTZlMTExMDg1YmE1Yjc1IiwiZW50cmllcyI6W3siYXJndiI6WyJweXRob24zIiwiLW0iLCJweXRlc3QiLCItcSJdLCJjd2RfcmVsYXRpdmUiOiIuIiwiZW5kZWRfYXQiOiIyMDI2LTA3LTE1VDEyOjE2OjM3WiIsImVudmlyb25tZW50X2ZpbmdlcnByaW50Ijp7Im9zIjoiTGludXgtNS4xMC4xMzQtMDEzLjguMy5rYW5nYXJvby5hbDgueDg2XzY0LXg4Nl82NC13aXRoLWdsaWJjMi40MSIsInB5dGhvbiI6IjMuMTIuMTMiLCJ0b29scyI6eyJnaXQiOiJnaXQgdmVyc2lvbiAyLjQ3LjMiLCJweXRob24iOiIzLjEyLjEzIn19LCJldmlkZW5jZV9wYXRocyI6eyJzdGRvdXQiOiIud29ya3Byb29mL2V2aWRlbmNlLzIwMjYwNzE1VDEyMTYyMVpfYTdjYTQxOTgub3V0Lmd6In0sImV4aXRfY29kZSI6MCwiZ2l0Ijp7ImRpcnR5X2RpZmZfc2hhMjU2IjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImhlYWRfc2hhIjoiMTdmOTQwMjg3Y2MxYWYxNWQzYTJkODZkYmI4YTE2OTc2ZDRjNGY3ZiJ9LCJoYXNoIjoiNzRhNTVhMjA4NmE0OTczMGU5NDdlNjQyOTAyYzdkZTIyNWZiODNmYjExNTUxMGIzZjQ4MmNhNGI5YjE2MTlhNSIsImtpbmQiOiJjb21tYW5kIiwicHJldl9oYXNoIjpudWxsLCJzdGFydGVkX2F0IjoiMjAyNi0wNy0xNVQxMjoxNjoyMVoiLCJzdGRlcnJfc2hhMjU2IjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsInN0ZG91dF9zaGEyNTYiOiJiZmVmMTE5N2JhN2MzNzRlODM0NTcxYTk0MWUyOTYxYWVjMjEyYjRjN2JhM2M0NzQ2YmI3NDc5NGM4MzAxOGE2In0seyJhcmd2IjpbInJ1ZmYiLCJjaGVjayIsInNyYyIsInRlc3RzIl0sImN3ZF9yZWxhdGl2ZSI6Ii4iLCJlbmRlZF9hdCI6IjIwMjYtMDctMTVUMTI6MTY6NDFaIiwiZW52aXJvbm1lbnRfZmluZ2VycHJpbnQiOnsib3MiOiJMaW51eC01LjEwLjEzNC0wMTMuOC4zLmthbmdhcm9vLmFsOC54ODZfNjQteDg2XzY0LXdpdGgtZ2xpYmMyLjQxIiwicHl0aG9uIjoiMy4xMi4xMyIsInRvb2xzIjp7ImdpdCI6ImdpdCB2ZXJzaW9uIDIuNDcuMyIsInB5dGhvbiI6IjMuMTIuMTMifX0sImV2aWRlbmNlX3BhdGhzIjp7InN0ZG91dCI6Ii53b3JrcHJvb2YvZXZpZGVuY2UvMjAyNjA3MTVUMTIxNjQxWl9lODcwNWNiYS5vdXQuZ3oifSwiZXhpdF9jb2RlIjowLCJnaXQiOnsiZGlydHlfZGlmZl9zaGEyNTYiOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiaGVhZF9zaGEiOiIxN2Y5NDAyODdjYzFhZjE1ZDNhMmQ4NmRiYjhhMTY5NzZkNGM0ZjdmIn0sImhhc2giOiI0ZGY1MTYyMDI1YTE3M2RhYjM4NGIxMWE5N2U4ZTAyZjFiNjFkZjM3Y2VlNjliNjdmZTFkZGQ5ZTI3Njg5ZGIzIiwia2luZCI6ImNvbW1hbmQiLCJwcmV2X2hhc2giOiI3NGE1NWEyMDg2YTQ5NzMwZTk0N2U2NDI5MDJjN2RlMjI1ZmI4M2ZiMTE1NTEwYjNmNDgyY2E0YjliMTYxOWE1Iiwic3RhcnRlZF9hdCI6IjIwMjYtMDctMTVUMTI6MTY6NDFaIiwic3RkZXJyX3NoYTI1NiI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJzdGRvdXRfc2hhMjU2IjoiODJiM2U2YTZjMDkwYTU3NjAxZDIyOTQzYmQyM2ZjYTkyMThkMTAzMWRiZTVhN2I3NTQwOTJmOWExNTZiNGYxOCJ9XSwiZW52aXJvbm1lbnRfZmluZ2VycHJpbnQiOnsib3MiOiJMaW51eC01LjEwLjEzNC0wMTMuOC4zLmthbmdhcm9vLmFsOC54ODZfNjQteDg2XzY0LXdpdGgtZ2xpYmMyLjQxIiwicHl0aG9uIjoiMy4xMi4xMyIsInRvb2xzIjp7ImdpdCI6ImdpdCB2ZXJzaW9uIDIuNDcuMyIsInB5dGhvbiI6IjMuMTIuMTMifX0sImZpbGVzX2NoYW5nZWQiOlsic3JjL3dvcmtwcm9vZi9jbGkucHkiLCJ0ZXN0cy90ZXN0X2NsaS5weSJdLCJoZWFkX3NoYSI6IjE3Zjk0MDI4N2NjMWFmMTVkM2EyZDg2ZGJiOGExNjk3NmQ0YzRmN2YiLCJoZXVyaXN0aWNzIjp7ImFzc2VydGlvbnNfcmVtb3ZlZCI6MCwiYXNzZXJ0aW9uc19yZW1vdmVkX2RldGFpbHMiOltdLCJuZXdfc2tpcF9tYXJrZXJzIjowLCJuZXdfc2tpcF9tYXJrZXJzX2RldGFpbHMiOltdfSwicG9saWN5Ijp7ImFsbG93ZWRfY29tbWFuZHMiOlsicHl0ZXN0IiwicHl0aG9uIC1tIHB5dGVzdCIsInB5dGhvbjMgLW0gcHl0ZXN0IiwicnVmZiBjaGVjayBzcmMgdGVzdHMiLCJydWZmIGNoZWNrIC4iLCJydWZmIGZvcm1hdCAtLWNoZWNrIHNyYyB0ZXN0cyJdLCJkZWZhdWx0X2FpX2xldmVsIjoiYXNzaXN0ZWQiLCJwb2xpY3lfdmVyc2lvbiI6IjAuMSJ9LCJzY2hlbWFfdmVyc2lvbiI6IjAuMSIsInRlc3RfZmlsZXNfYWRkZWQiOltdLCJ0ZXN0X2ZpbGVzX2RlbGV0ZWQiOltdLCJ0ZXN0X2ZpbGVzX21vZGlmaWVkIjpbInRlc3RzL3Rlc3RfY2xpLnB5Il19LCJwcmVkaWNhdGVUeXBlIjoiaHR0cHM6Ly93b3JrcHJvb2YuZGV2L3NwZWMvdjAuMSIsInN1YmplY3QiOlt7ImRpZ2VzdCI6eyJnaXRTaGEiOiIxN2Y5NDAyODdjYzFhZjE1ZDNhMmQ4NmRiYjhhMTY5NzZkNGM0ZjdmIiwic2hhMSI6IjE3Zjk0MDI4N2NjMWFmMTVkM2EyZDg2ZGJiOGExNjk3NmQ0YzRmN2YifSwibmFtZSI6ImdpdDoxN2Y5NDAyODdjYzFhZjE1ZDNhMmQ4NmRiYjhhMTY5NzZkNGM0ZjdmIn1dfQ==",
+  "payload_type": "application/vnd.in-toto+json",
+  "public_key": "MXXOoB/0A+suc2ZQqBfdEZwnXIa5vKoc4eb1lGArwxs=",
+  "schema_version": "0.1",
+  "signatures": [
+    {
+      "keyid": "ed25519",
+      "sig": "MgMlLvgH7FTbbT9YPU19ueC9kbD9YkPFnVrpVnUvc9M44fcwmNAq+vVcF26pWkQ+mJDuqI8mKF8MvvWoGak5Cw=="
+    }
+  ],
+  "statement": {
+    "_type": "https://in-toto.io/Statement/v1",
+    "predicate": {
+      "agent": "glm",
+      "ai_level": "assisted",
+      "base_sha": "fcbefba8663fae8fc14f77eea96e111085ba5b75",
+      "entries": [
+        {
+          "argv": [
+            "python3",
+            "-m",
+            "pytest",
+            "-q"
+          ],
+          "cwd_relative": ".",
+          "ended_at": "2026-07-15T12:16:37Z",
+          "environment_fingerprint": {
+            "os": "Linux-5.10.134-013.8.3.kangaroo.al8.x86_64-x86_64-with-glibc2.41",
+            "python": "3.12.13",
+            "tools": {
+              "git": "git version 2.47.3",
+              "python": "3.12.13"
+            }
+          },
+          "evidence_paths": {
+            "stdout": ".workproof/evidence/20260715T121621Z_a7ca4198.out.gz"
+          },
+          "exit_code": 0,
+          "git": {
+            "dirty_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "head_sha": "17f940287cc1af15d3a2d86dbb8a16976d4c4f7f"
+          },
+          "hash": "74a55a2086a49730e947e642902c7de225fb83fb115510b3f482ca4b9b1619a5",
+          "kind": "command",
+          "prev_hash": null,
+          "started_at": "2026-07-15T12:16:21Z",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "bfef1197ba7c374e834571a941e2961aec212b4c7ba3c4746bb74794c83018a6"
+        },
+        {
+          "argv": [
+            "ruff",
+            "check",
+            "src",
+            "tests"
+          ],
+          "cwd_relative": ".",
+          "ended_at": "2026-07-15T12:16:41Z",
+          "environment_fingerprint": {
+            "os": "Linux-5.10.134-013.8.3.kangaroo.al8.x86_64-x86_64-with-glibc2.41",
+            "python": "3.12.13",
+            "tools": {
+              "git": "git version 2.47.3",
+              "python": "3.12.13"
+            }
+          },
+          "evidence_paths": {
+            "stdout": ".workproof/evidence/20260715T121641Z_e8705cba.out.gz"
+          },
+          "exit_code": 0,
+          "git": {
+            "dirty_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "head_sha": "17f940287cc1af15d3a2d86dbb8a16976d4c4f7f"
+          },
+          "hash": "4df5162025a173dab384b11a97e8e02f1b61df37cee69b67fe1ddd9e27689db3",
+          "kind": "command",
+          "prev_hash": "74a55a2086a49730e947e642902c7de225fb83fb115510b3f482ca4b9b1619a5",
+          "started_at": "2026-07-15T12:16:41Z",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+        }
+      ],
+      "environment_fingerprint": {
+        "os": "Linux-5.10.134-013.8.3.kangaroo.al8.x86_64-x86_64-with-glibc2.41",
+        "python": "3.12.13",
+        "tools": {
+          "git": "git version 2.47.3",
+          "python": "3.12.13"
+        }
+      },
+      "files_changed": [
+        "src/workproof/cli.py",
+        "tests/test_cli.py"
+      ],
+      "head_sha": "17f940287cc1af15d3a2d86dbb8a16976d4c4f7f",
+      "heuristics": {
+        "assertions_removed": 0,
+        "assertions_removed_details": [],
+        "new_skip_markers": 0,
+        "new_skip_markers_details": []
+      },
+      "policy": {
+        "allowed_commands": [
+          "pytest",
+          "python -m pytest",
+          "python3 -m pytest",
+          "ruff check src tests",
+          "ruff check .",
+          "ruff format --check src tests"
+        ],
+        "default_ai_level": "assisted",
+        "policy_version": "0.1"
+      },
+      "schema_version": "0.1",
+      "test_files_added": [],
+      "test_files_deleted": [],
+      "test_files_modified": [
+        "tests/test_cli.py"
+      ]
+    },
+    "predicateType": "https://workproof.dev/spec/v0.1",
+    "subject": [
+      {
+        "digest": {
+          "gitSha": "17f940287cc1af15d3a2d86dbb8a16976d4c4f7f",
+          "sha1": "17f940287cc1af15d3a2d86dbb8a16976d4c4f7f"
+        },
+        "name": "git:17f940287cc1af15d3a2d86dbb8a16976d4c4f7f"
+      }
+    ]
+  }
+}
