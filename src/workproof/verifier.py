@@ -56,6 +56,7 @@ def verify_receipt(
     repo: Path | None = None,
     policy: Policy | None = None,
     expected_head_sha: str | None = None,
+    allow_ancestor: bool = False,
 ) -> VerificationResult:
     """Verify a Workproof receipt dict against the repo and policy.
 
@@ -65,6 +66,10 @@ def verify_receipt(
     - ``policy``: project policy. If ``None``, the command-subset check is
       skipped (status ``warn``).
     - ``expected_head_sha``: if provided, the receipt's head SHA must match.
+    - ``allow_ancestor``: if True, accept a receipt whose head_sha is an
+      ancestor of the repo HEAD (or expected_head_sha) rather than an exact
+      match. This supports the real-world workflow where the receipt is
+      committed in a separate commit on top of the code commit it attests.
 
     Returns a :class:`VerificationResult`. The caller is responsible for
     translating ``exit_code`` to a process exit code.
@@ -107,6 +112,14 @@ def verify_receipt(
     if expected_head_sha is not None:
         if head_sha == expected_head_sha:
             result.add("head_sha", "pass", f"matches expected {head_sha[:12]}")
+        elif (
+            allow_ancestor and repo is not None and _is_ancestor(repo, head_sha, expected_head_sha)
+        ):
+            result.add(
+                "head_sha",
+                "pass",
+                f"receipt {head_sha[:12]} is ancestor of expected {expected_head_sha[:12]}",
+            )
         else:
             result.add(
                 "head_sha",
@@ -124,6 +137,12 @@ def verify_receipt(
         actual_sha = _git_head_sha(repo)
         if actual_sha and actual_sha == head_sha:
             result.add("head_sha", "pass", f"matches repo HEAD {head_sha[:12]}")
+        elif actual_sha and allow_ancestor and _is_ancestor(repo, head_sha, actual_sha):
+            result.add(
+                "head_sha",
+                "pass",
+                f"receipt {head_sha[:12]} is ancestor of repo HEAD {actual_sha[:12]}",
+            )
         elif actual_sha:
             result.add(
                 "head_sha",
@@ -233,6 +252,30 @@ def _git_head_sha(repo: Path) -> str:
         return out.stdout.strip()
     except (subprocess.SubprocessError, FileNotFoundError):
         return ""
+
+
+def _is_ancestor(repo: Path, ancestor: str, descendant: str) -> bool:
+    """Return True iff ``ancestor`` is an ancestor of ``descendant`` in ``repo``.
+
+    Uses ``git merge-base --is-ancestor``. Returns False on any git error
+    (missing repo, bad SHA, etc.) — the caller treats False as "not an ancestor"
+    and falls through to the exact-match failure path.
+    """
+    if not ancestor or not descendant:
+        return False
+    import subprocess
+
+    try:
+        out = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", ancestor, descendant],
+            cwd=str(repo),
+            capture_output=True,
+            check=False,
+            timeout=10,
+        )
+        return out.returncode == 0
+    except (subprocess.SubprocessError, FileNotFoundError):
+        return False
 
 
 def _declared_commands(receipt: Receipt) -> list[list[str]]:

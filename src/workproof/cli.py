@@ -261,6 +261,14 @@ def verify(
             "--expected-head-sha", help="Pin the head SHA the receipt must match (e.g. PR HEAD)."
         ),
     ] = None,
+    allow_ancestor: Annotated[
+        bool,
+        typer.Option(
+            "--allow-ancestor",
+            help="Accept a receipt whose head_sha is an ancestor of the repo HEAD / expected SHA. "
+            "Use when the receipt is committed in a separate commit on top of the code commit.",
+        ),
+    ] = False,
 ) -> None:
     """Verify a receipt against the repo and policy.
 
@@ -281,6 +289,7 @@ def verify(
         repo=repo,
         policy=policy_obj,
         expected_head_sha=expected_head_sha,
+        allow_ancestor=allow_ancestor,
     )
     _print_verification_result(result)
     raise typer.Exit(code=result.exit_code)

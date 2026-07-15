@@ -1,0 +1,9 @@
+policy_version: "0.1"
+allowed_commands:
+  - pytest
+  - python -m pytest
+  - python3 -m pytest
+  - ruff check src tests
+  - ruff check .
+  - ruff format --check src tests
+default_ai_level: assisted

@@ -28,6 +28,12 @@ dependencies = [
     "typer>=0.9.0",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "ruff>=0.1.0",
+]
+
 [project.urls]
 Homepage = "https://github.com/workproof/workproof"
 Issues = "https://github.com/workproof/workproof/issues"
