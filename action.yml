@@ -19,9 +19,9 @@ inputs:
     required: false
     default: "true"
   version:
-    description: "Workproof version to install. A git tag (e.g. 'v0.1.0') or 'latest'. Defaults to 'v0.1.0' for reproducibility."
+    description: "Workproof version to install. A git tag (e.g. 'v0.2.0') or 'latest'. Defaults to 'v0.2.0' (the version with the evidence_freshness check)."
     required: false
-    default: "v0.1.0"
+    default: "v0.2.0"
   github-token:
     description: "GitHub token for posting the sticky comment and commit status. Defaults to the automatically-provided GITHUB_TOKEN."
     required: false
@@ -62,28 +62,47 @@ runs:
         HEAD_SHA: ${{ steps.head.outputs.sha }}
         PR_BODY: ${{ github.event.pull_request.body }}
       run: |
-        # 1. Explicit path
+        # Receipt lives OUTSIDE the git tree (PR body or git notes), so the
+        # attested commit IS the PR head. No ancestor logic needed.
+        #
+        # 1. Explicit path (rare — only if the contributor stored it somewhere specific)
         if [ -n "$RECEIPT_PATH_INPUT" ] && [ -f "$RECEIPT_PATH_INPUT" ]; then
           echo "path=$RECEIPT_PATH_INPUT" >> "$GITHUB_OUTPUT"
           echo "source=explicit" >> "$GITHUB_OUTPUT"
           exit 0
         fi
-        # 2. Conventional path
-        CONVENTIONAL=".workproof/receipts/${HEAD_SHA}.json"
-        if [ -f "$CONVENTIONAL" ]; then
-          echo "path=$CONVENTIONAL" >> "$GITHUB_OUTPUT"
-          echo "source=conventional" >> "$GITHUB_OUTPUT"
-          exit 0
-        fi
-        # 3. PR body (look for a fenced ```workproof block, or a path mention)
+        # 2. PR body: extract the JSON from the <!-- workproof:receipt -->
+        #    fenced code block (the default --emit=pr-body output).
         if [ -n "$PR_BODY" ]; then
-          # Try to extract a path like .workproof/receipts/<sha>.json from the body
-          EXTRACTED=$(echo "$PR_BODY" | grep -oE '\.workproof/receipts/[a-f0-9]+\.json' | head -1 || true)
-          if [ -n "$EXTRACTED" ] && [ -f "$EXTRACTED" ]; then
-            echo "path=$EXTRACTED" >> "$GITHUB_OUTPUT"
+          RECEIPT_JSON=$(echo "$PR_BODY" | python3 -c "
+        import sys, re
+        body = sys.stdin.read()
+        m = re.search(r'\`\`\`workproof-receipt\n(.*?)\n\`\`\`', body, re.DOTALL)
+        if m:
+            print(m.group(1), end='')
+        " 2>/dev/null || true)
+          if [ -n "$RECEIPT_JSON" ]; then
+            echo "$RECEIPT_JSON" > /tmp/workproof-receipt.json
+            echo "path=/tmp/workproof-receipt.json" >> "$GITHUB_OUTPUT"
             echo "source=pr-body" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+        fi
+        # 3. Git notes: refs/notes/workproof on the HEAD commit
+        if git notes --ref=workproof list HEAD >/dev/null 2>&1; then
+          git notes --ref=workproof show HEAD > /tmp/workproof-receipt.json 2>/dev/null
+          if [ -s /tmp/workproof-receipt.json ]; then
+            echo "path=/tmp/workproof-receipt.json" >> "$GITHUB_OUTPUT"
+            echo "source=git-notes" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+        fi
+        # 4. Conventional file path (legacy — receipts committed in-tree)
+        CONVENTIONAL=".workproof/receipts/${HEAD_SHA}.json"
+        if [ -f "$CONVENTIONAL" ]; then
+          echo "path=$CONVENTIONAL" >> "$GITHUB_OUTPUT"
+          echo "source=conventional-file" >> "$GITHUB_OUTPUT"
+          exit 0
         fi
         # No receipt found
         echo "path=" >> "$GITHUB_OUTPUT"

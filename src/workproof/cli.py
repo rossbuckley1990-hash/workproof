@@ -173,14 +173,26 @@ def attest(
         str | None,
         typer.Option("--head", help="Head git SHA. Default: HEAD."),
     ] = None,
-    no_write: Annotated[
-        bool,
-        typer.Option("--no-write", help="Print the receipt to stdout; don't write a file."),
-    ] = False,
+    emit: Annotated[
+        str,
+        typer.Option(
+            "--emit",
+            help="Where to output the receipt: 'pr-body' (default, prints JSON+Markdown to stdout "
+            "for pasting into the PR body), 'notes' (writes to a git note on HEAD), "
+            "'file' (writes to .workproof/receipts/<sha>.json — NOT recommended for committed trees).",
+        ),
+    ] = "pr-body",
 ) -> None:
-    """Bundle the session into a signed receipt and write it under ``.workproof/receipts/``.
+    """Bundle the session into a signed receipt.
 
-    Prints a Markdown summary suitable for pasting into a PR description.
+    By default (--emit=pr-body), prints the receipt JSON inside a fenced code
+    block plus a Markdown summary, suitable for pasting directly into the PR
+    body. The receipt lives OUTSIDE the git tree, so the attested commit IS
+    the PR head — no ancestor logic needed, no laundering gap.
+
+    --emit=notes writes the receipt as a git note on HEAD (refs/notes/workproof).
+    --emit=file writes to .workproof/receipts/ (legacy; do not commit this file
+    into the tree it describes, or verification will fail without ancestor logic).
     """
     # Resolve SHAs
     repo = Path.cwd()
@@ -229,14 +241,59 @@ def attest(
             agent=agent,
             keypair=kp,
             policy_dict=policy_dict,
-            write=not no_write,
+            write=False,  # we handle output ourselves based on --emit
         )
     except AttestError as e:
         typer.echo(f"error: {e}", err=True)
         raise typer.Exit(1) from e
 
-    receipt_path = getattr(receipt, "receipt_path", None)
-    typer.echo(receipt.to_markdown(receipt_path=receipt_path))
+    receipt_json = json.dumps(receipt.to_dict(), indent=2, sort_keys=True, ensure_ascii=False)
+
+    if emit == "pr-body":
+        # Print a copy-pasteable block: JSON in a fenced code block + Markdown summary.
+        # The contributor pastes this into the PR body. The Action parses the JSON
+        # block from the PR body.
+        typer.echo("<!-- workproof:receipt -->")
+        typer.echo("```workproof-receipt")
+        typer.echo(receipt_json)
+        typer.echo("```")
+        typer.echo("")
+        typer.echo(receipt.to_markdown(receipt_path=None))
+    elif emit == "notes":
+        # Write as a git note on HEAD. Notes live outside the tree (refs/notes/*),
+        # so they don't change the commit SHA.
+        import subprocess
+
+        try:
+            # git notes --ref=workproof add -f -m "<json>" HEAD
+            subprocess.run(
+                ["git", "notes", "--ref=workproof", "add", "-f", "-m", receipt_json, "HEAD"],
+                cwd=str(repo),
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            typer.echo(f"  ✓ receipt written to git note (refs/notes/workproof) on {head_sha[:12]}")
+            typer.echo("    push with: git push origin refs/notes/workproof")
+            typer.echo("")
+            typer.echo(receipt.to_markdown(receipt_path=f"git:notes/workproof/{head_sha}"))
+        except subprocess.CalledProcessError as e:
+            typer.echo(f"error: failed to write git note: {e.stderr}", err=True)
+            raise typer.Exit(1) from e
+    elif emit == "file":
+        out_dir = Path("workproof") / "receipts" if False else Path(".workproof/receipts")
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out_path = out_dir / f"{head_sha}.json"
+        out_path.write_text(receipt_json + "\n", encoding="utf-8")
+        typer.echo(f"  ⚠ receipt written to {out_path}")
+        typer.echo("  ⚠ WARNING: do NOT commit this file into the tree it describes.")
+        typer.echo("  ⚠ Use --emit=pr-body (default) or --emit=notes instead.")
+        typer.echo("")
+        typer.echo(receipt.to_markdown(receipt_path=str(out_path)))
+    else:
+        typer.echo(f"error: --emit must be 'pr-body', 'notes', or 'file', got {emit!r}", err=True)
+        raise typer.Exit(2)
 
 
 @app.command()
@@ -261,14 +318,6 @@ def verify(
             "--expected-head-sha", help="Pin the head SHA the receipt must match (e.g. PR HEAD)."
         ),
     ] = None,
-    allow_ancestor: Annotated[
-        bool,
-        typer.Option(
-            "--allow-ancestor",
-            help="Accept a receipt whose head_sha is an ancestor of the repo HEAD / expected SHA. "
-            "Use when the receipt is committed in a separate commit on top of the code commit.",
-        ),
-    ] = False,
 ) -> None:
     """Verify a receipt against the repo and policy.
 
@@ -289,7 +338,6 @@ def verify(
         repo=repo,
         policy=policy_obj,
         expected_head_sha=expected_head_sha,
-        allow_ancestor=allow_ancestor,
     )
     _print_verification_result(result)
     raise typer.Exit(code=result.exit_code)

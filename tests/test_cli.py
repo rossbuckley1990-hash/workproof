@@ -144,7 +144,7 @@ class TestAttest:
         runner.invoke(app, ["run", "--", "python3", "-c", "print('test')"])
         r = runner.invoke(
             app,
-            ["attest", "--ai-level", "assisted", "--agent", "claude-code"],
+            ["attest", "--ai-level", "assisted", "--agent", "claude-code", "--emit=file"],
         )
         assert r.exit_code == 0, r.output
         # Receipt file written
@@ -214,7 +214,7 @@ class TestStatus:
         runner.invoke(app, ["init"])
         _make_head_commit(isolated_home)
         runner.invoke(app, ["run", "--", "python3", "-c", "print('x')"])
-        runner.invoke(app, ["attest", "--ai-level", "assisted", "--agent", "x"])
+        runner.invoke(app, ["attest", "--ai-level", "assisted", "--agent", "x", "--emit=file"])
         r = runner.invoke(app, ["status"])
         assert r.exit_code == 0, r.output
         assert "1 receipt" in r.output or "receipts:" in r.output.lower()
@@ -225,7 +225,9 @@ class TestVerify:
         runner.invoke(app, ["init"])
         head_sha = _make_head_commit(isolated_home)
         runner.invoke(app, ["run", "--", "python3", "-c", "print('test')"])
-        runner.invoke(app, ["attest", "--ai-level", "assisted", "--agent", "claude-code"])
+        runner.invoke(
+            app, ["attest", "--ai-level", "assisted", "--agent", "claude-code", "--emit=file"]
+        )
         receipt_path = isolated_home / ".workproof" / "receipts" / f"{head_sha}.json"
         r = runner.invoke(app, ["verify", str(receipt_path), "--repo", str(isolated_home)])
         assert r.exit_code == 0, r.output
@@ -236,7 +238,9 @@ class TestVerify:
         runner.invoke(app, ["init"])
         head_sha = _make_head_commit(isolated_home)
         runner.invoke(app, ["run", "--", "python3", "-c", "print('test')"])
-        runner.invoke(app, ["attest", "--ai-level", "assisted", "--agent", "claude-code"])
+        runner.invoke(
+            app, ["attest", "--ai-level", "assisted", "--agent", "claude-code", "--emit=file"]
+        )
         receipt_path = isolated_home / ".workproof" / "receipts" / f"{head_sha}.json"
         # Edit the embedded statement (this breaks payload/statement match)
         d = json.loads(receipt_path.read_text())
@@ -251,7 +255,9 @@ class TestVerify:
         runner.invoke(app, ["init"])
         head_sha = _make_head_commit(isolated_home)
         runner.invoke(app, ["run", "--", "python3", "-c", "print('test')"])
-        runner.invoke(app, ["attest", "--ai-level", "assisted", "--agent", "claude-code"])
+        runner.invoke(
+            app, ["attest", "--ai-level", "assisted", "--agent", "claude-code", "--emit=file"]
+        )
         receipt_path = isolated_home / ".workproof" / "receipts" / f"{head_sha}.json"
         # Now create another commit so HEAD differs
         (isolated_home / "another.py").write_text("x = 1\n", encoding="utf-8")
@@ -287,7 +293,9 @@ class TestVerify:
             check=True,
         ).stdout.strip()
         runner.invoke(app, ["run", "--", "python3", "-c", "print('test')"])
-        runner.invoke(app, ["attest", "--ai-level", "assisted", "--agent", "claude-code"])
+        runner.invoke(
+            app, ["attest", "--ai-level", "assisted", "--agent", "claude-code", "--emit=file"]
+        )
         receipt_path = isolated_home / ".workproof" / "receipts" / f"{head_sha}.json"
         r = runner.invoke(app, ["verify", str(receipt_path), "--repo", str(isolated_home)])
         # Exit 0 (heuristics are informational) but output mentions the removal

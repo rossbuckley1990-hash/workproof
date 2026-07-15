@@ -75,7 +75,7 @@ def laundering_repo(tmp_path, monkeypatch):
     ).stdout.strip()
 
     # Attest against B (HEAD is now B, not A)
-    runner.invoke(app, ["attest", "--ai-level", "assisted", "--agent", "attacker"])
+    runner.invoke(app, ["attest", "--ai-level", "assisted", "--agent", "attacker", "--emit=file"])
 
     receipt_path = repo / ".workproof" / "receipts" / f"{commit_b}.json"
     assert receipt_path.exists(), f"receipt not written at {receipt_path}"
@@ -161,7 +161,7 @@ class TestEvidenceLaundering:
 
         runner.invoke(app, ["init"])
         runner.invoke(app, ["run", "--", "python3", "-m", "pytest", "-q"])
-        runner.invoke(app, ["attest", "--ai-level", "assisted", "--agent", "honest"])
+        runner.invoke(app, ["attest", "--ai-level", "assisted", "--agent", "honest", "--emit=file"])
 
         receipt_path = repo / ".workproof" / "receipts" / f"{head}.json"
         r = runner.invoke(
@@ -228,7 +228,9 @@ class TestEvidenceLaundering:
         # Revert the uncommitted change so the tree is clean at attest time
         (repo / "calc.py").write_text("def add(a, b):\n    return a + b\n", encoding="utf-8")
 
-        runner.invoke(app, ["attest", "--ai-level", "assisted", "--agent", "attacker"])
+        runner.invoke(
+            app, ["attest", "--ai-level", "assisted", "--agent", "attacker", "--emit=file"]
+        )
 
         receipt_path = repo / ".workproof" / "receipts" / f"{head}.json"
         receipt = json.loads(receipt_path.read_text())

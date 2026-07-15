@@ -50,22 +50,42 @@ jobs:
           HEAD_SHA: ${{ steps.head.outputs.sha }}
           PR_BODY: ${{ github.event.pull_request.body }}
         run: |
-          # 1. Conventional path: .workproof/receipts/<any-sha>.json
-          #    (the sha in the filename is the code commit, not necessarily the PR head)
-          RECEIPT_FILE=$(find .workproof/receipts -name '*.json' 2>/dev/null | head -1 || true)
-          if [ -n "$RECEIPT_FILE" ] && [ -f "$RECEIPT_FILE" ]; then
-            echo "path=$RECEIPT_FILE" >> "$GITHUB_OUTPUT"
-            echo "source=conventional" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          # 2. PR body: look for a path mention
+          # Receipt lives OUTSIDE the git tree (PR body or git notes), so the
+          # attested commit IS the PR head. No ancestor logic needed.
+          #
+          # 1. PR body: extract the JSON from the <!-- workproof:receipt -->
+          #    fenced code block (the default --emit=pr-body output).
           if [ -n "$PR_BODY" ]; then
-            EXTRACTED=$(echo "$PR_BODY" | grep -oE '\.workproof/receipts/[a-f0-9]+\.json' | head -1 || true)
-            if [ -n "$EXTRACTED" ] && [ -f "$EXTRACTED" ]; then
-              echo "path=$EXTRACTED" >> "$GITHUB_OUTPUT"
+            # Extract the content between ```workproof-receipt and ```
+            RECEIPT_JSON=$(echo "$PR_BODY" | python3 -c "
+          import sys, re
+          body = sys.stdin.read()
+          m = re.search(r'\`\`\`workproof-receipt\n(.*?)\n\`\`\`', body, re.DOTALL)
+          if m:
+              print(m.group(1), end='')
+          " 2>/dev/null || true)
+            if [ -n "$RECEIPT_JSON" ]; then
+              echo "$RECEIPT_JSON" > /tmp/workproof-receipt.json
+              echo "path=/tmp/workproof-receipt.json" >> "$GITHUB_OUTPUT"
               echo "source=pr-body" >> "$GITHUB_OUTPUT"
               exit 0
             fi
+          fi
+          # 2. Git notes: refs/notes/workproof on the HEAD commit
+          if git notes --ref=workproof list HEAD >/dev/null 2>&1; then
+            git notes --ref=workproof show HEAD > /tmp/workproof-receipt.json 2>/dev/null
+            if [ -s /tmp/workproof-receipt.json ]; then
+              echo "path=/tmp/workproof-receipt.json" >> "$GITHUB_OUTPUT"
+              echo "source=git-notes" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+          # 3. Conventional file path (legacy — receipts committed in-tree)
+          RECEIPT_FILE=$(find .workproof/receipts -name '*.json' 2>/dev/null | head -1 || true)
+          if [ -n "$RECEIPT_FILE" ] && [ -f "$RECEIPT_FILE" ]; then
+            echo "path=$RECEIPT_FILE" >> "$GITHUB_OUTPUT"
+            echo "source=conventional-file" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
           echo "path=" >> "$GITHUB_OUTPUT"
           echo "source=missing" >> "$GITHUB_OUTPUT"
@@ -79,14 +99,13 @@ jobs:
           HEAD_SHA: ${{ steps.head.outputs.sha }}
         run: |
           set +e
-          # --allow-ancestor: the receipt is for the code commit, which is an
-          # ancestor of the PR head (the receipt is committed on top). This is
-          # the real-world flow documented in docs/SCHEMA.md.
+          # Exact head SHA match only — no --allow-ancestor. Receipts live
+          # outside the tree (PR body / git notes), so the attested commit
+          # IS the PR head. Ancestor logic would re-open the laundering hole.
           workproof verify "$RECEIPT_PATH" \
             --repo . \
             --policy .workproof.yml \
             --expected-head-sha "$HEAD_SHA" \
-            --allow-ancestor \
             > verify-output.txt 2>&1
           EXIT=$?
           echo "exit=$EXIT" >> "$GITHUB_OUTPUT"

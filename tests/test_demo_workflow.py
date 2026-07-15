@@ -91,7 +91,7 @@ class TestDemoWorkflow:
         # 4. attest
         r = runner.invoke(
             app,
-            ["attest", "--ai-level", "assisted", "--agent", "claude-code"],
+            ["attest", "--ai-level", "assisted", "--agent", "claude-code", "--emit=file"],
         )
         assert r.exit_code == 0, r.output
         assert "VERIFIED" in r.output.upper() or "Workproof Receipt" in r.output

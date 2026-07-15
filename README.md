@@ -1,5 +1,9 @@
 # Workproof
 
+Workproof was built with a coding agent in a day. Every PR to this repo
+carries its own Workproof receipt, including the ones that built it. If the
+idea can't survive that, it shouldn't exist.
+
 **Deterministic evidence layer for AI-assisted pull requests.**
 
 Maintainers are flooded with AI-generated PRs whose claims can't be verified.
@@ -19,19 +23,20 @@ pipx install workproof-cli
 cd your-repo
 workproof init
 
-# 3. Record evidence of your work
+# 3. Record evidence of your work (run against the commit you'll attest)
 workproof run -- pytest
 workproof run -- ruff check .
 
-# 4. Bundle a signed receipt
+# 4. Commit your code changes FIRST (evidence must be recorded against the commit you attest)
+git add -A && git commit -m "feat: add foo"
+
+# 5. Re-run evidence against the committed code, then bundle a receipt
+workproof run -- pytest
 workproof attest --ai-level assisted --agent claude-code
 
-# 5. Commit the receipt alongside your changes
-git add .workproof/receipts/
-git commit -m "feat: add foo"
-git push
-
-# 6. Open a PR — paste the Markdown block from `attest` into the description
+# 6. Open a PR — paste the entire output of `attest` into the PR body.
+#    The receipt JSON lives in the PR body, NOT in the git tree. This is the
+#    anti-laundering contract: the attested commit IS the PR head.
 ```
 
 If your repo has the Workproof GitHub Action installed (see
