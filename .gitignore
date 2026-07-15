@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.eggs/
+*.egg
+
+# Test / coverage
+.coverage
+.pytest_cache/
+htmlcov/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Workproof runtime artifacts (do NOT commit these in real projects;
+# this repo's own .workproof/ is for the demo and is .gitignored)
+.workproof/
+
+# venv
+.venv/
+venv/
