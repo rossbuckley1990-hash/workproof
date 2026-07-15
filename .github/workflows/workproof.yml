@@ -13,6 +13,7 @@ name: Workproof
 on:
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, edited]  # 'edited' re-verifies when PR body is updated
 
 # Explicit permissions: the default GITHUB_TOKEN is read-only by default for
 # security. Workproof needs to post/update PR comments and set commit statuses.
