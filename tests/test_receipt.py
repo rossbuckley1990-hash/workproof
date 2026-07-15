@@ -119,7 +119,8 @@ class TestReceiptRoundTrip:
         stmt = _sample_statement()
         receipt = build_receipt(statement=stmt, keypair=kp)
         other = generate_keypair()
-        receipt.public_key = other.public_key
+        # public_key field is base64-encoded; encode the swapped key
+        receipt.public_key = base64.b64encode(other.public_key).decode("ascii")
         assert verify_receipt_signature(receipt) is False
 
 
