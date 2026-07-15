@@ -97,7 +97,9 @@ class TestRun:
         assert r.exit_code == 0
         session_path = isolated_home / ".workproof" / "session.jsonl"
         assert session_path.exists()
-        entries = [json.loads(line) for line in session_path.read_text().splitlines() if line.strip()]
+        entries = [
+            json.loads(line) for line in session_path.read_text().splitlines() if line.strip()
+        ]
         assert len(entries) == 1
         assert entries[0]["exit_code"] == 0
         assert entries[0]["argv"] == ["python3", "-c", "print('hi')"]
@@ -107,7 +109,9 @@ class TestRun:
         r = runner.invoke(app, ["run", "--", "python3", "-c", "import sys; sys.exit(3)"])
         assert r.exit_code == 3
         session_path = isolated_home / ".workproof" / "session.jsonl"
-        entries = [json.loads(line) for line in session_path.read_text().splitlines() if line.strip()]
+        entries = [
+            json.loads(line) for line in session_path.read_text().splitlines() if line.strip()
+        ]
         assert entries[0]["exit_code"] == 3
 
     def test_run_chains_multiple_entries(self, isolated_home) -> None:
@@ -115,7 +119,9 @@ class TestRun:
         runner.invoke(app, ["run", "--", "python3", "-c", "print(1)"])
         runner.invoke(app, ["run", "--", "python3", "-c", "print(2)"])
         session_path = isolated_home / ".workproof" / "session.jsonl"
-        entries = [json.loads(line) for line in session_path.read_text().splitlines() if line.strip()]
+        entries = [
+            json.loads(line) for line in session_path.read_text().splitlines() if line.strip()
+        ]
         assert len(entries) == 2
         # Genesis: prev_hash is null
         assert entries[0]["prev_hash"] is None

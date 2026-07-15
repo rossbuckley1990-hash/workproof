@@ -95,7 +95,7 @@ def categorize_files(pairs: list[tuple[str, str]]) -> dict[str, list[str]]:
     return out
 
 
-def test_file_changes(repo: Path, base: str, head: str) -> dict[str, list[str]]:
+def analyze_test_file_changes(repo: Path, base: str, head: str) -> dict[str, list[str]]:
     """Return ``{added, modified, deleted}`` lists of *test* files only.
 
     A file is a test file iff :func:`workproof.heuristics.is_test_file` returns

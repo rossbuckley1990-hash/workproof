@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from workproof.crypto import KeyPair
-from workproof.git_analysis import all_files_changed, test_file_changes
+from workproof.git_analysis import all_files_changed, analyze_test_file_changes
 from workproof.heuristics import HeuristicResult, analyze_diff
 from workproof.receipt import (
     PREDICATE_TYPE,
@@ -54,7 +54,7 @@ def build_statement(
 
     entries = session.entries()
     files_changed = all_files_changed(repo, base_sha, head_sha)
-    test_files = test_file_changes(repo, base_sha, head_sha)
+    test_files = analyze_test_file_changes(repo, base_sha, head_sha)
     heuristics = analyze_diff(repo, base_sha, head_sha, files_changed)
 
     # Environment fingerprint is taken from the last entry (most recent state).
