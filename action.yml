@@ -1,0 +1,305 @@
+name: "Workproof verify"
+description: "Verify a Workproof receipt on a pull request. Posts exactly one sticky comment with the result and sets a commit status check. No LLM calls — pure deterministic verification."
+author: "Workproof Contributors"
+branding:
+  icon: "shield"
+  color: "green"
+
+inputs:
+  receipt-path:
+    description: "Path within the repo to the receipt JSON file. If empty, the action searches .workproof/receipts/<head_sha>.json and the PR body."
+    required: false
+    default: ""
+  reexecute:
+    description: "If 'true', re-execute declared test commands and compare exit codes (D11: exit-code-only comparison)."
+    required: false
+    default: "false"
+  fail-on-incomplete:
+    description: "If 'true', fail the job when verification returns INCOMPLETE (exit 2). TAMPERED (exit 1) always fails."
+    required: false
+    default: "true"
+  github-token:
+    description: "GitHub token for posting the sticky comment and commit status. Defaults to the automatically-provided GITHUB_TOKEN."
+    required: false
+    default: "${{ github.token }}"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Workproof
+      shell: bash
+      run: |
+        python3 -m pip install --upgrade pip
+        python3 -m pip install workproof-cli
+
+    - name: Resolve PR head SHA
+      id: head
+      shell: bash
+      run: |
+        if [ -n "${{ github.event.pull_request.head.sha }}" ]; then
+          echo "sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+        else
+          echo "sha=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Locate receipt
+      id: receipt
+      shell: bash
+      env:
+        RECEIPT_PATH_INPUT: ${{ inputs.receipt-path }}
+        HEAD_SHA: ${{ steps.head.outputs.sha }}
+        PR_BODY: ${{ github.event.pull_request.body }}
+      run: |
+        # 1. Explicit path
+        if [ -n "$RECEIPT_PATH_INPUT" ] && [ -f "$RECEIPT_PATH_INPUT" ]; then
+          echo "path=$RECEIPT_PATH_INPUT" >> "$GITHUB_OUTPUT"
+          echo "source=explicit" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        # 2. Conventional path
+        CONVENTIONAL=".workproof/receipts/${HEAD_SHA}.json"
+        if [ -f "$CONVENTIONAL" ]; then
+          echo "path=$CONVENTIONAL" >> "$GITHUB_OUTPUT"
+          echo "source=conventional" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        # 3. PR body (look for a fenced ```workproof block, or a path mention)
+        if [ -n "$PR_BODY" ]; then
+          # Try to extract a path like .workproof/receipts/<sha>.json from the body
+          EXTRACTED=$(echo "$PR_BODY" | grep -oE '\.workproof/receipts/[a-f0-9]+\.json' | head -1 || true)
+          if [ -n "$EXTRACTED" ] && [ -f "$EXTRACTED" ]; then
+            echo "path=$EXTRACTED" >> "$GITHUB_OUTPUT"
+            echo "source=pr-body" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+        fi
+        # No receipt found
+        echo "path=" >> "$GITHUB_OUTPUT"
+        echo "source=missing" >> "$GITHUB_OUTPUT"
+
+    - name: Verify receipt
+      id: verify
+      if: steps.receipt.outputs.path != ''
+      shell: bash
+      continue-on-error: true
+      env:
+        RECEIPT_PATH: ${{ steps.receipt.outputs.path }}
+        HEAD_SHA: ${{ steps.head.outputs.sha }}
+        REEXECUTE: ${{ inputs.reexecute }}
+      run: |
+        set +e
+        workproof verify "$RECEIPT_PATH" \
+          --repo . \
+          --policy .workproof.yml \
+          --expected-head-sha "$HEAD_SHA" \
+          > verify-output.txt 2>&1
+        EXIT=$?
+        echo "exit=$EXIT" >> "$GITHUB_OUTPUT"
+        cat verify-output.txt
+        # Capture the result label for the comment
+        if grep -q "result: VERIFIED" verify-output.txt; then
+          echo "label=VERIFIED" >> "$GITHUB_OUTPUT"
+        elif grep -q "result: TAMPERED" verify-output.txt; then
+          echo "label=TAMPERED" >> "$GITHUB_OUTPUT"
+        elif grep -q "result: INCOMPLETE" verify-output.txt; then
+          echo "label=INCOMPLETE" >> "$GITHUB_OUTPUT"
+        else
+          echo "label=ERROR" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Re-execute declared commands (optional)
+      id: reexecute
+      if: steps.receipt.outputs.path != '' && inputs.reexecute == 'true' && steps.verify.outputs.exit == '0'
+      shell: bash
+      continue-on-error: true
+      env:
+        RECEIPT_PATH: ${{ steps.receipt.outputs.path }}
+      run: |
+        # Extract declared commands from the receipt and re-run them.
+        # Compare exit codes only (D11: output bytes are environment-dependent).
+        python3 - <<'PY'
+        import json, subprocess, sys
+        with open("${RECEIPT_PATH}") as f:
+            receipt = json.load(f)
+        entries = receipt["statement"]["predicate"].get("entries", [])
+        results = []
+        for e in entries:
+            argv = e.get("argv", [])
+            if not argv:
+                continue
+            recorded_exit = e.get("exit_code")
+            try:
+                proc = subprocess.run(argv, capture_output=True, timeout=600)
+                actual_exit = proc.returncode
+            except (FileNotFoundError, subprocess.TimeoutExpired):
+                actual_exit = -1
+            match = "✓" if actual_exit == recorded_exit else "✗"
+            results.append(f"{match} {' '.join(argv)} → recorded={recorded_exit} actual={actual_exit}")
+        print("\n".join(results) or "(no commands to re-execute)")
+        with open("reexecute-output.txt", "w") as f:
+            f.write("\n".join(results))
+        PY
+
+    - name: Build comment body
+      if: always()
+      shell: bash
+      env:
+        RECEIPT_PATH: ${{ steps.receipt.outputs.path }}
+        RECEIPT_SOURCE: ${{ steps.receipt.outputs.source }}
+        VERIFY_LABEL: ${{ steps.verify.outputs.label }}
+        VERIFY_EXIT: ${{ steps.verify.outputs.exit }}
+        HEAD_SHA: ${{ steps.head.outputs.sha }}
+        REEXECUTE: ${{ inputs.reexecute }}
+      run: |
+        cat > comment.md <<'HEADER'
+        <!-- workproof:sticky:v1 -->
+        ## Workproof verification
+        HEADER
+
+        if [ "$RECEIPT_SOURCE" = "missing" ]; then
+          cat >> comment.md <<EOF
+        | Check | Status |
+        |---|---|
+        | Receipt found | ✗ missing |
+        | Head SHA | \`${HEAD_SHA:0:12}\` |
+
+        No Workproof receipt found. AI-assisted PRs to this repo require a receipt.
+        See \`CONTRIBUTING.md\` for how to generate one.
+        EOF
+          exit 0
+        fi
+
+        # Convert verify output to a markdown table
+        cat >> comment.md <<EOF
+        | Check | Status |
+        |---|---|
+        | Receipt | \`${RECEIPT_PATH}\` (source: ${RECEIPT_SOURCE}) |
+        | Head SHA | \`${HEAD_SHA:0:12}\` |
+        | Result | **${VERIFY_LABEL:-UNKNOWN}** |
+        EOF
+
+        # Append the per-check table from verify output
+        if [ -f verify-output.txt ]; then
+          echo "" >> comment.md
+          echo "<details><summary>Detailed checks</summary>" >> comment.md
+          echo "" >> comment.md
+          echo '```' >> comment.md
+          cat verify-output.txt >> comment.md
+          echo '```' >> comment.md
+          echo "" >> comment.md
+          echo "</details>" >> comment.md
+        fi
+
+        # Append re-execution results if present
+        if [ "$REEXECUTE" = "true" ] && [ -f reexecute-output.txt ]; then
+          echo "" >> comment.md
+          echo "<details><summary>Re-executed commands</summary>" >> comment.md
+          echo "" >> comment.md
+          echo '```' >> comment.md
+          cat reexecute-output.txt >> comment.md
+          echo '```' >> comment.md
+          echo "" >> comment.md
+          echo "</details>" >> comment.md
+        fi
+
+    - name: Find existing sticky comment
+      if: always() && github.event.pull_request.number != ''
+      id: find-comment
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ inputs.github-token }}
+        script: |
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.payload.pull_request.number,
+            per_page: 100,
+          });
+          const marker = '<!-- workproof:sticky:v1 -->';
+          const existing = comments.find(c => c.body && c.body.includes(marker));
+          if (existing) {
+            core.setOutput('comment-id', existing.id);
+          } else {
+            core.setOutput('comment-id', '');
+          }
+
+    - name: Create or update sticky comment
+      if: always() && github.event.pull_request.number != ''
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ inputs.github-token }}
+        script: |
+          const fs = require('fs');
+          const body = fs.readFileSync('comment.md', 'utf8');
+          const commentId = '${{ steps.find-comment.outputs.comment-id }}';
+          const owner = context.repo.owner;
+          const repo = context.repo.repo;
+          const issueNumber = context.payload.pull_request.number;
+          if (commentId) {
+            await github.rest.issues.updateComment({
+              owner, repo, comment_id: parseInt(commentId), body
+            });
+            core.info(`Updated comment ${commentId}`);
+          } else {
+            await github.rest.issues.createComment({
+              owner, repo, issue_number: issueNumber, body
+            });
+            core.info(`Created new comment on PR ${issueNumber}`);
+          }
+
+    - name: Set commit status
+      if: always()
+      uses: actions/github-script@v7
+      env:
+        VERIFY_LABEL: ${{ steps.verify.outputs.label }}
+        RECEIPT_SOURCE: ${{ steps.receipt.outputs.source }}
+      with:
+        github-token: ${{ inputs.github-token }}
+        script: |
+          const sha = '${{ steps.head.outputs.sha }}';
+          let state = 'success';
+          let desc = 'Workproof verified';
+          if (process.env.RECEIPT_SOURCE === 'missing') {
+            state = 'failure';
+            desc = 'No Workproof receipt found';
+          } else if (process.env.VERIFY_LABEL === 'TAMPERED') {
+            state = 'failure';
+            desc = 'Workproof receipt is tampered';
+          } else if (process.env.VERIFY_LABEL === 'INCOMPLETE') {
+            state = 'failure';
+            desc = 'Workproof receipt does not match this PR';
+          } else if (process.env.VERIFY_LABEL === 'ERROR' || !process.env.VERIFY_LABEL) {
+            state = 'error';
+            desc = 'Workproof verification errored';
+          }
+          await github.rest.repos.createCommitStatus({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            sha,
+            state,
+            description: desc,
+            context: 'Workproof',
+            target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+          });
+
+    - name: Fail job on tamper or incomplete
+      if: always()
+      shell: bash
+      env:
+        VERIFY_EXIT: ${{ steps.verify.outputs.exit }}
+        RECEIPT_SOURCE: ${{ steps.receipt.outputs.source }}
+        FAIL_ON_INCOMPLETE: ${{ inputs.fail-on-incomplete }}
+      run: |
+        if [ "$RECEIPT_SOURCE" = "missing" ]; then
+          echo "::error::No Workproof receipt found for this PR."
+          exit 1
+        fi
+        if [ "$VERIFY_EXIT" = "1" ]; then
+          echo "::error::Receipt is TAMPERED."
+          exit 1
+        fi
+        if [ "$VERIFY_EXIT" = "2" ] && [ "$FAIL_ON_INCOMPLETE" = "true" ]; then
+          echo "::error::Receipt is INCOMPLETE (does not match this PR)."
+          exit 1
+        fi
+        echo "Workproof check complete."

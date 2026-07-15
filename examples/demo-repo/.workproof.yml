@@ -1,0 +1,5 @@
+policy_version: "0.1"
+allowed_commands:
+  - pytest
+  - python -m pytest
+default_ai_level: assisted

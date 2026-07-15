@@ -1,0 +1,17 @@
+name: Workproof
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # need full history for base..head diff
+      - uses: workproof/workproof@v0.1
+        with:
+          reexecute: true
+          fail-on-incomplete: true
