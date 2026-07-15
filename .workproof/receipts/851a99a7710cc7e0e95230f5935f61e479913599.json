@@ -1,0 +1,130 @@
+{
+  "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJwcmVkaWNhdGUiOnsiYWdlbnQiOiJnbG0iLCJhaV9sZXZlbCI6ImFzc2lzdGVkIiwiYmFzZV9zaGEiOiJjYTcxNDYxZTIzMTIzYWQzZmRiZTg3ZGMzOWI5NjFjMTg5NTMyOTdiIiwiZW50cmllcyI6W3siYXJndiI6WyJweXRob24zIiwiLW0iLCJweXRlc3QiLCItcSJdLCJjd2RfcmVsYXRpdmUiOiIuIiwiZW5kZWRfYXQiOiIyMDI2LTA3LTE1VDEyOjU5OjUwWiIsImVudmlyb25tZW50X2ZpbmdlcnByaW50Ijp7Im9zIjoiTGludXgtNS4xMC4xMzQtMDEzLjguMy5rYW5nYXJvby5hbDgueDg2XzY0LXg4Nl82NC13aXRoLWdsaWJjMi40MSIsInB5dGhvbiI6IjMuMTIuMTMiLCJ0b29scyI6eyJnaXQiOiJnaXQgdmVyc2lvbiAyLjQ3LjMiLCJweXRob24iOiIzLjEyLjEzIn19LCJldmlkZW5jZV9wYXRocyI6eyJzdGRvdXQiOiIud29ya3Byb29mL2V2aWRlbmNlLzIwMjYwNzE1VDEyNTkzMFpfYjY5YTkwNTYub3V0Lmd6In0sImV4aXRfY29kZSI6MCwiZ2l0Ijp7ImRpcnR5X2RpZmZfc2hhMjU2IjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImhlYWRfc2hhIjoiODUxYTk5YTc3MTBjYzdlMGU5NTIzMGY1OTM1ZjYxZTQ3OTkxMzU5OSJ9LCJoYXNoIjoiMzQ1NTZkYTg2NWZhY2E0YjYyNmZlYzA0MmM1OTI5NGYwYThjOTRiYjc1NzFhZDZlNGY2NzE5ODViMjRkZDZmNSIsImtpbmQiOiJjb21tYW5kIiwicHJldl9oYXNoIjpudWxsLCJzdGFydGVkX2F0IjoiMjAyNi0wNy0xNVQxMjo1OTozMFoiLCJzdGRlcnJfc2hhMjU2IjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsInN0ZG91dF9zaGEyNTYiOiJhZTUyZGVjMjA0M2EyOWYzNzY5OTM3OWY1NmI1MTk4ODQ3MzliMWQwNTJiM2NkN2RiYzY0NzA4NTVmMjE3OTRmIn0seyJhcmd2IjpbInJ1ZmYiLCJjaGVjayIsInNyYyIsInRlc3RzIl0sImN3ZF9yZWxhdGl2ZSI6Ii4iLCJlbmRlZF9hdCI6IjIwMjYtMDctMTVUMTI6NTk6NTBaIiwiZW52aXJvbm1lbnRfZmluZ2VycHJpbnQiOnsib3MiOiJMaW51eC01LjEwLjEzNC0wMTMuOC4zLmthbmdhcm9vLmFsOC54ODZfNjQteDg2XzY0LXdpdGgtZ2xpYmMyLjQxIiwicHl0aG9uIjoiMy4xMi4xMyIsInRvb2xzIjp7ImdpdCI6ImdpdCB2ZXJzaW9uIDIuNDcuMyIsInB5dGhvbiI6IjMuMTIuMTMifX0sImV2aWRlbmNlX3BhdGhzIjp7InN0ZG91dCI6Ii53b3JrcHJvb2YvZXZpZGVuY2UvMjAyNjA3MTVUMTI1OTUwWl82NGYyZDAwNy5vdXQuZ3oifSwiZXhpdF9jb2RlIjowLCJnaXQiOnsiZGlydHlfZGlmZl9zaGEyNTYiOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiaGVhZF9zaGEiOiI4NTFhOTlhNzcxMGNjN2UwZTk1MjMwZjU5MzVmNjFlNDc5OTEzNTk5In0sImhhc2giOiJhZDU1NGJkNTIzMmQ0YjcyYjRmYWRhZjBlNTZkOGIyMDlmZjVmYjE1MTI3Y2M0OTEwYjhhMzkyMTNjNzE0MThiIiwia2luZCI6ImNvbW1hbmQiLCJwcmV2X2hhc2giOiIzNDU1NmRhODY1ZmFjYTRiNjI2ZmVjMDQyYzU5Mjk0ZjBhOGM5NGJiNzU3MWFkNmU0ZjY3MTk4NWIyNGRkNmY1Iiwic3RhcnRlZF9hdCI6IjIwMjYtMDctMTVUMTI6NTk6NTBaIiwic3RkZXJyX3NoYTI1NiI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJzdGRvdXRfc2hhMjU2IjoiODJiM2U2YTZjMDkwYTU3NjAxZDIyOTQzYmQyM2ZjYTkyMThkMTAzMWRiZTVhN2I3NTQwOTJmOWExNTZiNGYxOCJ9XSwiZW52aXJvbm1lbnRfZmluZ2VycHJpbnQiOnsib3MiOiJMaW51eC01LjEwLjEzNC0wMTMuOC4zLmthbmdhcm9vLmFsOC54ODZfNjQteDg2XzY0LXdpdGgtZ2xpYmMyLjQxIiwicHl0aG9uIjoiMy4xMi4xMyIsInRvb2xzIjp7ImdpdCI6ImdpdCB2ZXJzaW9uIDIuNDcuMyIsInB5dGhvbiI6IjMuMTIuMTMifX0sImZpbGVzX2NoYW5nZWQiOlsiLndvcmtwcm9vZi9yZWNlaXB0cy8xN2Y5NDAyODdjYzFhZjE1ZDNhMmQ4NmRiYjhhMTY5NzZkNGM0ZjdmLmpzb24iXSwiaGVhZF9zaGEiOiI4NTFhOTlhNzcxMGNjN2UwZTk1MjMwZjU5MzVmNjFlNDc5OTEzNTk5IiwiaGV1cmlzdGljcyI6eyJhc3NlcnRpb25zX3JlbW92ZWQiOjAsImFzc2VydGlvbnNfcmVtb3ZlZF9kZXRhaWxzIjpbXSwibmV3X3NraXBfbWFya2VycyI6MCwibmV3X3NraXBfbWFya2Vyc19kZXRhaWxzIjpbXX0sInBvbGljeSI6eyJhbGxvd2VkX2NvbW1hbmRzIjpbInB5dGVzdCIsInB5dGhvbiAtbSBweXRlc3QiLCJweXRob24zIC1tIHB5dGVzdCIsInJ1ZmYgY2hlY2sgc3JjIHRlc3RzIiwicnVmZiBjaGVjayAuIiwicnVmZiBmb3JtYXQgLS1jaGVjayBzcmMgdGVzdHMiXSwiZGVmYXVsdF9haV9sZXZlbCI6ImFzc2lzdGVkIiwicG9saWN5X3ZlcnNpb24iOiIwLjEifSwic2NoZW1hX3ZlcnNpb24iOiIwLjIiLCJ0ZXN0X2ZpbGVzX2FkZGVkIjpbXSwidGVzdF9maWxlc19kZWxldGVkIjpbXSwidGVzdF9maWxlc19tb2RpZmllZCI6W119LCJwcmVkaWNhdGVUeXBlIjoiaHR0cHM6Ly93b3JrcHJvb2YuZGV2L3NwZWMvdjAuMiIsInN1YmplY3QiOlt7ImRpZ2VzdCI6eyJnaXRTaGEiOiI4NTFhOTlhNzcxMGNjN2UwZTk1MjMwZjU5MzVmNjFlNDc5OTEzNTk5Iiwic2hhMSI6Ijg1MWE5OWE3NzEwY2M3ZTBlOTUyMzBmNTkzNWY2MWU0Nzk5MTM1OTkifSwibmFtZSI6ImdpdDo4NTFhOTlhNzcxMGNjN2UwZTk1MjMwZjU5MzVmNjFlNDc5OTEzNTk5In1dfQ==",
+  "payload_type": "application/vnd.in-toto+json",
+  "public_key": "kA9f8YiA9Vbe5YNpjKxA9dYiQYFJkvWGaSIuasYYadQ=",
+  "schema_version": "0.2",
+  "signatures": [
+    {
+      "keyid": "ed25519",
+      "sig": "Qh6/KcndP0vWHd/xTEagyJqLKA90ab8wl2gMdDLCoI1LMT5m2nPn3k5YRm/ezH17v05cdpw3ubj4ltjmWltiAQ=="
+    }
+  ],
+  "statement": {
+    "_type": "https://in-toto.io/Statement/v1",
+    "predicate": {
+      "agent": "glm",
+      "ai_level": "assisted",
+      "base_sha": "ca71461e23123ad3fdbe87dc39b961c18953297b",
+      "entries": [
+        {
+          "argv": [
+            "python3",
+            "-m",
+            "pytest",
+            "-q"
+          ],
+          "cwd_relative": ".",
+          "ended_at": "2026-07-15T12:59:50Z",
+          "environment_fingerprint": {
+            "os": "Linux-5.10.134-013.8.3.kangaroo.al8.x86_64-x86_64-with-glibc2.41",
+            "python": "3.12.13",
+            "tools": {
+              "git": "git version 2.47.3",
+              "python": "3.12.13"
+            }
+          },
+          "evidence_paths": {
+            "stdout": ".workproof/evidence/20260715T125930Z_b69a9056.out.gz"
+          },
+          "exit_code": 0,
+          "git": {
+            "dirty_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "head_sha": "851a99a7710cc7e0e95230f5935f61e479913599"
+          },
+          "hash": "34556da865faca4b626fec042c59294f0a8c94bb7571ad6e4f671985b24dd6f5",
+          "kind": "command",
+          "prev_hash": null,
+          "started_at": "2026-07-15T12:59:30Z",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "ae52dec2043a29f37699379f56b519884739b1d052b3cd7dbc6470855f21794f"
+        },
+        {
+          "argv": [
+            "ruff",
+            "check",
+            "src",
+            "tests"
+          ],
+          "cwd_relative": ".",
+          "ended_at": "2026-07-15T12:59:50Z",
+          "environment_fingerprint": {
+            "os": "Linux-5.10.134-013.8.3.kangaroo.al8.x86_64-x86_64-with-glibc2.41",
+            "python": "3.12.13",
+            "tools": {
+              "git": "git version 2.47.3",
+              "python": "3.12.13"
+            }
+          },
+          "evidence_paths": {
+            "stdout": ".workproof/evidence/20260715T125950Z_64f2d007.out.gz"
+          },
+          "exit_code": 0,
+          "git": {
+            "dirty_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "head_sha": "851a99a7710cc7e0e95230f5935f61e479913599"
+          },
+          "hash": "ad554bd5232d4b72b4fadaf0e56d8b209ff5fb15127cc4910b8a39213c71418b",
+          "kind": "command",
+          "prev_hash": "34556da865faca4b626fec042c59294f0a8c94bb7571ad6e4f671985b24dd6f5",
+          "started_at": "2026-07-15T12:59:50Z",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+        }
+      ],
+      "environment_fingerprint": {
+        "os": "Linux-5.10.134-013.8.3.kangaroo.al8.x86_64-x86_64-with-glibc2.41",
+        "python": "3.12.13",
+        "tools": {
+          "git": "git version 2.47.3",
+          "python": "3.12.13"
+        }
+      },
+      "files_changed": [
+        ".workproof/receipts/17f940287cc1af15d3a2d86dbb8a16976d4c4f7f.json"
+      ],
+      "head_sha": "851a99a7710cc7e0e95230f5935f61e479913599",
+      "heuristics": {
+        "assertions_removed": 0,
+        "assertions_removed_details": [],
+        "new_skip_markers": 0,
+        "new_skip_markers_details": []
+      },
+      "policy": {
+        "allowed_commands": [
+          "pytest",
+          "python -m pytest",
+          "python3 -m pytest",
+          "ruff check src tests",
+          "ruff check .",
+          "ruff format --check src tests"
+        ],
+        "default_ai_level": "assisted",
+        "policy_version": "0.1"
+      },
+      "schema_version": "0.2",
+      "test_files_added": [],
+      "test_files_deleted": [],
+      "test_files_modified": []
+    },
+    "predicateType": "https://workproof.dev/spec/v0.2",
+    "subject": [
+      {
+        "digest": {
+          "gitSha": "851a99a7710cc7e0e95230f5935f61e479913599",
+          "sha1": "851a99a7710cc7e0e95230f5935f61e479913599"
+        },
+        "name": "git:851a99a7710cc7e0e95230f5935f61e479913599"
+      }
+    ]
+  }
+}

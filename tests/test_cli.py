@@ -194,6 +194,32 @@ class TestAttest:
         assert "no session" in r.output.lower()
 
 
+class TestStatus:
+    def test_status_shows_state_after_init(self, isolated_home) -> None:
+        runner.invoke(app, ["init"])
+        r = runner.invoke(app, ["status"])
+        assert r.exit_code == 0, r.output
+        assert "keys present" in r.output
+        assert "policy" in r.output.lower()
+        assert "no session" in r.output.lower() or "session" in r.output.lower()
+
+    def test_status_shows_session_after_run(self, isolated_home) -> None:
+        runner.invoke(app, ["init"])
+        runner.invoke(app, ["run", "--", "python3", "-c", "print('x')"])
+        r = runner.invoke(app, ["status"])
+        assert r.exit_code == 0, r.output
+        assert "1 entry" in r.output or "1 entry/entries" in r.output
+
+    def test_status_shows_receipts_after_attest(self, isolated_home) -> None:
+        runner.invoke(app, ["init"])
+        _make_head_commit(isolated_home)
+        runner.invoke(app, ["run", "--", "python3", "-c", "print('x')"])
+        runner.invoke(app, ["attest", "--ai-level", "assisted", "--agent", "x"])
+        r = runner.invoke(app, ["status"])
+        assert r.exit_code == 0, r.output
+        assert "1 receipt" in r.output or "receipts:" in r.output.lower()
+
+
 class TestVerify:
     def test_verify_succeeds_on_fresh_receipt(self, isolated_home) -> None:
         runner.invoke(app, ["init"])

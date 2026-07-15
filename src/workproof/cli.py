@@ -295,6 +295,51 @@ def verify(
     raise typer.Exit(code=result.exit_code)
 
 
+@app.command()
+def status() -> None:
+    """Print the current Workproof state: keys, policy, session, receipts.
+
+    Useful as a pre-flight check before ``attest`` — confirms that init was
+    run, that there's a session to attest, and shows how many receipts exist.
+    """
+    from workproof.keyring import has_keys
+
+    # Keys
+    if has_keys():
+        typer.echo(f"  ✓ keys present at {keyring_dir()}/")
+    else:
+        typer.echo(f"  ✗ no keys at {keyring_dir()}/ (run `workproof init`)")
+
+    # Policy
+    policy_path = Path(DEFAULT_POLICY_PATH)
+    if policy_path.exists():
+        try:
+            p = Policy.load(policy_path)
+            typer.echo(f"  ✓ policy: {policy_path} ({len(p.allowed_commands)} allowed command(s))")
+        except PolicyError as e:
+            typer.echo(f"  ⚠ policy at {policy_path} is malformed: {e}")
+    else:
+        typer.echo(f"  ✗ no policy at {policy_path} (run `workproof init`)")
+
+    # Session
+    session = Session(DEFAULT_SESSION_PATH)
+    if session.exists():
+        entries = session.entries()
+        typer.echo(f"  ✓ session: {len(entries)} entry/entries at {DEFAULT_SESSION_PATH}")
+        if entries:
+            typer.echo(f"    last hash: {entries[-1].get('hash', '?')[:12]}")
+    else:
+        typer.echo(f"  ✗ no session at {DEFAULT_SESSION_PATH} (run `workproof run -- <cmd>`)")
+
+    # Receipts
+    receipts_dir = Path(".workproof/receipts")
+    if receipts_dir.exists():
+        receipts = list(receipts_dir.glob("*.json"))
+        typer.echo(f"  ✓ receipts: {len(receipts)} at {receipts_dir}/")
+    else:
+        typer.echo(f"  • no receipts yet at {receipts_dir}/")
+
+
 # ----- helpers -----
 
 
