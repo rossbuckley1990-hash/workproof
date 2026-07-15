@@ -68,14 +68,10 @@ echo ""
 echo "--- Step 3: workproof init ---"
 $VENV/bin/workproof init
 
-# 4. workproof run -- pytest (buggy, will fail)
+# 4. Fix the bug first, then commit (honest workflow: record evidence only
+#    against the commit you're going to attest)
 echo ""
-echo "--- Step 4: workproof run -- pytest (buggy, expecting failure) ---"
-$VENV/bin/workproof run -- python3 -m pytest || echo "(expected failure, exit $?)"
-
-# 5. Fix the bug
-echo ""
-echo "--- Step 5: fix the bug ---"
+echo "--- Step 4: fix the bug and commit ---"
 cat > calculator.py << 'EOF'
 def add(a, b):
     return a + b  # fixed
@@ -88,19 +84,19 @@ git commit -q -m "fix: add() now adds"
 HEAD_SHA=$(git rev-parse HEAD)
 echo "head sha: $HEAD_SHA"
 
-# 6. workproof run -- pytest (fixed, should pass)
+# 5. workproof run -- pytest (fixed, should pass)
 echo ""
-echo "--- Step 6: workproof run -- pytest (fixed, expecting pass) ---"
+echo "--- Step 5: workproof run -- pytest (fixed, expecting pass) ---"
 $VENV/bin/workproof run -- python3 -m pytest
 
-# 7. workproof attest
+# 6. workproof attest
 echo ""
-echo "--- Step 7: workproof attest ---"
+echo "--- Step 6: workproof attest ---"
 $VENV/bin/workproof attest --ai-level assisted --agent claude-code
 
-# 8. workproof verify
+# 7. workproof verify
 echo ""
-echo "--- Step 8: workproof verify ---"
+echo "--- Step 7: workproof verify ---"
 $VENV/bin/workproof verify ".workproof/receipts/${HEAD_SHA}.json" \
     --repo . \
     --policy .workproof.yml \
