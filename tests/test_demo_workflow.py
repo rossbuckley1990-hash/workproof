@@ -72,11 +72,8 @@ class TestDemoWorkflow:
         r = runner.invoke(app, ["init"])
         assert r.exit_code == 0, r.output
 
-        # 2. run tests against buggy code (should fail, exit 1)
-        r = runner.invoke(app, ["run", "--", "python3", "-m", "pytest"])
-        assert r.exit_code == 1, "buggy tests should fail"
-
-        # 3. Fix the bug
+        # 2. Fix the bug first, then commit (honest workflow: record evidence
+        #    only against the commit you're going to attest)
         (repo / "calculator.py").write_text(
             "def add(a, b):\n    return a + b  # fixed\n\ndef multiply(a, b):\n    return a * b\n",
             encoding="utf-8",
@@ -87,11 +84,11 @@ class TestDemoWorkflow:
             ["git", "rev-parse", "HEAD"], cwd=repo, capture_output=True, text=True, check=True
         ).stdout.strip()
 
-        # 4. run tests against fixed code (should pass)
+        # 3. run tests against the fixed commit (should pass)
         r = runner.invoke(app, ["run", "--", "python3", "-m", "pytest"])
         assert r.exit_code == 0, r.output
 
-        # 5. attest
+        # 4. attest
         r = runner.invoke(
             app,
             ["attest", "--ai-level", "assisted", "--agent", "claude-code"],
@@ -99,7 +96,7 @@ class TestDemoWorkflow:
         assert r.exit_code == 0, r.output
         assert "VERIFIED" in r.output.upper() or "Workproof Receipt" in r.output
 
-        # 6. verify
+        # 5. verify
         receipt_path = repo / ".workproof" / "receipts" / f"{head_sha}.json"
         assert receipt_path.exists(), f"receipt not written at {receipt_path}"
 
@@ -110,20 +107,19 @@ class TestDemoWorkflow:
         assert r.exit_code == 0, r.output
         assert "VERIFIED" in r.output
 
-        # 7. The receipt includes the AI declaration
+        # 6. The receipt includes the AI declaration
         import json
 
         receipt = json.loads(receipt_path.read_text())
         assert receipt["statement"]["predicate"]["ai_level"] == "assisted"
         assert receipt["statement"]["predicate"]["agent"] == "claude-code"
 
-        # 8. The receipt includes 2 entries (failing run + passing run)
+        # 7. The receipt includes 1 entry (the passing test run against the fixed commit)
         entries = receipt["statement"]["predicate"]["entries"]
-        assert len(entries) == 2
-        assert entries[0]["exit_code"] == 1  # buggy run failed
-        assert entries[1]["exit_code"] == 0  # fixed run passed
+        assert len(entries) == 1
+        assert entries[0]["exit_code"] == 0  # tests passed
 
-        # 9. Heuristics: no assertions removed, no skip markers (clean fix)
+        # 8. Heuristics: no assertions removed, no skip markers (clean fix)
         h = receipt["statement"]["predicate"]["heuristics"]
         assert h["assertions_removed"] == 0
         assert h["new_skip_markers"] == 0

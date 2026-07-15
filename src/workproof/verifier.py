@@ -4,29 +4,49 @@
 :class:`VerificationResult` carrying exit-code semantics:
 
 - ``exit_code == 0`` → verified (signature valid, hash chain intact, head SHA
-  matches, declared commands are a subset of policy)
+  matches, evidence freshness confirmed, declared commands are a subset of policy)
 - ``exit_code == 1`` → tampered (signature invalid, hash chain broken, or
   payload/statement mismatch)
 - ``exit_code == 2`` → incomplete (signature valid but the receipt references
   a tree / SHA / commands the verifier cannot reconcile against the repo)
 
 This split lets the GitHub Action show ⚠ vs ✗ distinctly (D07 in DECISIONS.md).
+
+Check statuses: ``"pass"``, ``"fail"``, ``"warn"`` (informational), ``"skip"``
+(not evaluated — the verifier did not have enough context to run this check).
+The CLI renders ``"skip"`` as ``⚠ skipped`` so the reviewer never mistakes a
+skipped check for a passed one.
 """
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from workproof.chain import ChainError, verify_chain
 from workproof.policy import Policy
-from workproof.receipt import Receipt, ReceiptError, parse_receipt, verify_receipt_signature
+from workproof.receipt import (
+    SUPPORTED_PREDICATE_TYPES,
+    Receipt,
+    ReceiptError,
+    parse_receipt,
+    verify_receipt_signature,
+)
 
 # Exit codes (per spec)
 EXIT_VERIFIED = 0
 EXIT_TAMPERED = 1
 EXIT_INCOMPLETE = 2
+
+# sha256 of empty bytes — the dirty_diff_sha256 value that indicates a clean
+# working tree at evidence-recording time.
+CLEAN_TREE_HASH = hashlib.sha256(b"").hexdigest()
+
+# Schema 0.2 predicateType — receipts with this type get the evidence_freshness check
+PREDICATE_TYPE_02 = SUPPORTED_PREDICATE_TYPES["0.2"]
+PREDICATE_TYPE_01 = SUPPORTED_PREDICATE_TYPES["0.1"]
 
 
 @dataclass
@@ -34,8 +54,9 @@ class VerificationResult:
     """Structured outcome of receipt verification.
 
     ``checks`` is an ordered list of ``(name, status, detail)`` triples where
-    status is one of ``"pass"``, ``"fail"``, ``"warn"``. The GitHub Action
-    renders this as a table directly.
+    status is one of ``"pass"``, ``"fail"``, ``"warn"``, ``"skip"``. The GitHub
+    Action renders this as a table directly. ``"skip"`` means the check was not
+    evaluated (insufficient context) and must never be confused with ``"pass"``.
     """
 
     exit_code: int
@@ -107,6 +128,57 @@ def verify_receipt(
         result.diagnosis = f"Hash chain broken: {e}"
         return result
 
+    # ---- 3b. Evidence freshness (schema 0.2 only) ----
+    # This is the anti-laundering check. Every entry records the git HEAD SHA
+    # and the dirty-diff hash at the moment the command ran. For the receipt to
+    # be honest, every entry must have been recorded against the SAME tree as
+    # the receipt's subject (head_sha), AND the tree must have been clean
+    # (dirty_diff_sha256 == sha256("")). Otherwise the evidence was recorded on
+    # a different tree than the one being attested — classic evidence laundering.
+    #
+    # Schema 0.1 receipts predate this check; they skip it with a warning so
+    # old receipts still verify (forward-compat), but the reviewer sees the gap.
+    subject_sha = _extract_head_sha(receipt.statement)
+    predicate_type = receipt.statement.get("predicateType", "")
+    if predicate_type == PREDICATE_TYPE_02:
+        stale_entries = []
+        for i, e in enumerate(entries):
+            entry_git = e.get("git", {})
+            entry_head = entry_git.get("head_sha", "")
+            entry_dirty = entry_git.get("dirty_diff_sha256", "")
+            if entry_head != subject_sha:
+                stale_entries.append(
+                    f"entry {i}: head_sha {entry_head[:12]!r} ≠ subject {subject_sha[:12]!r}"
+                )
+            elif entry_dirty != CLEAN_TREE_HASH:
+                stale_entries.append(
+                    f"entry {i}: dirty working tree (dirty_diff_sha256={entry_dirty[:12]!r})"
+                )
+        if stale_entries:
+            detail = "; ".join(stale_entries)
+            result.add("evidence_freshness", "fail", detail)
+            result.exit_code = EXIT_INCOMPLETE
+            result.diagnosis = (
+                f"Evidence laundering detected: {detail}. "
+                f"Evidence was recorded on a different tree than the attested commit. "
+                f"The receipt does not prove the declared commands ran against this commit."
+            )
+            return result
+        else:
+            result.add(
+                "evidence_freshness",
+                "pass",
+                f"{len(entries)} entry/entries all recorded against subject SHA, clean tree",
+            )
+    elif predicate_type == PREDICATE_TYPE_01:
+        result.add(
+            "evidence_freshness",
+            "skip",
+            "v0.1 receipts do not verify evidence freshness (upgrade to v0.2 for this check)",
+        )
+    else:
+        result.add("evidence_freshness", "skip", f"unknown predicateType {predicate_type!r}")
+
     # ---- 4. Head SHA match ----
     head_sha = _extract_head_sha(receipt.statement)
     if expected_head_sha is not None:
@@ -159,11 +231,11 @@ def verify_receipt(
         else:
             result.add("head_sha", "warn", "repo has no HEAD (empty git repo?)")
     else:
-        result.add("head_sha", "warn", "no repo or expected_sha provided; skipping")
+        result.add("head_sha", "skip", "no --repo or --expected-head-sha provided")
 
     # ---- 5. Command subset of policy ----
     if policy is None:
-        result.add("command_policy", "warn", "no policy provided; skipping")
+        result.add("command_policy", "skip", "no --policy provided")
     else:
         declared = _declared_commands(receipt)
         violations = [c for c in declared if not policy.is_command_allowed(c)]
@@ -222,7 +294,25 @@ def verify_receipt(
         result.add("ai_declaration", "pass", f"declared {ai} (agent: {agent})")
 
     if result.exit_code == EXIT_VERIFIED:
-        result.diagnosis = "Receipt verified: signature valid, chain intact, head SHA matches."
+        # Build the diagnosis from checks that actually PASSED — never mention
+        # skipped checks as if they ran. This is the anti-overclaim contract.
+        passed = [name for name, status, _ in result.checks if status == "pass"]
+        skipped = [name for name, status, _ in result.checks if status == "skip"]
+        parts = []
+        if "signature" in passed:
+            parts.append("signature valid")
+        if "hash_chain" in passed:
+            parts.append("chain intact")
+        if "evidence_freshness" in passed:
+            parts.append("evidence fresh")
+        if "head_sha" in passed:
+            parts.append("head SHA matches")
+        if "command_policy" in passed:
+            parts.append("commands in policy")
+        diag = "Receipt verified: " + ", ".join(parts) + "."
+        if skipped:
+            diag += f" Skipped (not evaluated): {', '.join(skipped)}."
+        result.diagnosis = diag
     return result
 
 

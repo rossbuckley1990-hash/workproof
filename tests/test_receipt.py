@@ -43,7 +43,7 @@ def _sample_statement() -> dict:
         ],
         "predicateType": PREDICATE_TYPE,
         "predicate": {
-            "schema_version": "0.1",
+            "schema_version": "0.2",
             "base_sha": "0000000",
             "head_sha": "abc123",
             "files_changed": ["src/app.py"],
@@ -127,7 +127,7 @@ class TestReceiptRoundTrip:
 class TestReceiptGoldenFile:
     """Byte-stable golden file: receipt for fixed key + fixed statement."""
 
-    GOLDEN_PATH = GOLDEN_DIR / "receipt_v0.1.json"
+    GOLDEN_PATH = GOLDEN_DIR / "receipt_v0.2.json"
 
     def test_golden_file_matches(self) -> None:
         kp = _fixed_keypair()
@@ -154,7 +154,7 @@ class TestReceiptErrors:
         stmt = _sample_statement()
         receipt = build_receipt(statement=stmt, keypair=kp)
         d = receipt.to_dict()
-        d["schema_version"] = "0.2"
+        d["schema_version"] = "0.99"  # unsupported future version
         with pytest.raises(ReceiptError, match="schema_version"):
             parse_receipt(d)
 

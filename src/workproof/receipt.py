@@ -33,11 +33,18 @@ from typing import Any
 from workproof.canonical import canonical_bytes
 from workproof.crypto import KeyPair, sign, verify
 
-SCHEMA_VERSION = "0.1"
-PREDICATE_TYPE = "https://workproof.dev/spec/v0.1"
+SCHEMA_VERSION = "0.2"
+PREDICATE_TYPE = "https://workproof.dev/spec/v0.2"
 STATEMENT_TYPE = "https://in-toto.io/Statement/v1"
 PAYLOAD_TYPE = "application/vnd.in-toto+json"
 KEYID = "ed25519"
+
+# Supported schema versions (for backward-compatible parsing)
+SUPPORTED_SCHEMA_VERSIONS = {"0.1", "0.2"}
+SUPPORTED_PREDICATE_TYPES = {
+    "0.1": "https://workproof.dev/spec/v0.1",
+    "0.2": "https://workproof.dev/spec/v0.2",
+}
 
 STICKY_MARKER = "<!-- workproof:sticky:v1 -->"
 
@@ -189,11 +196,15 @@ def parse_receipt(d: dict[str, Any]) -> Receipt:
     - missing envelope fields
     - payload / statement mismatch (tampered human-readable copy)
     - missing or malformed signature
+
+    Accepts both schema 0.1 and 0.2. The verifier decides which checks to run
+    based on the schema version (0.1 skips evidence_freshness; 0.2 enforces it).
     """
-    if d.get("schema_version") != SCHEMA_VERSION:
+    sv = d.get("schema_version")
+    if sv not in SUPPORTED_SCHEMA_VERSIONS:
         raise ReceiptError(
-            f"unsupported schema_version {d.get('schema_version')!r}; "
-            f"this verifier only supports {SCHEMA_VERSION!r}"
+            f"unsupported schema_version {sv!r}; "
+            f"this verifier supports {sorted(SUPPORTED_SCHEMA_VERSIONS)!r}"
         )
     for k in ("payload_type", "payload", "signatures", "public_key", "statement"):
         if k not in d:
@@ -211,9 +222,11 @@ def parse_receipt(d: dict[str, Any]) -> Receipt:
         raise ReceiptError("statement must be an object")
     if stmt.get("_type") != STATEMENT_TYPE:
         raise ReceiptError(f"statement _type must be {STATEMENT_TYPE!r}, got {stmt.get('_type')!r}")
-    if stmt.get("predicateType") != PREDICATE_TYPE:
+    pt = stmt.get("predicateType")
+    if pt not in SUPPORTED_PREDICATE_TYPES.values():
         raise ReceiptError(
-            f"statement predicateType must be {PREDICATE_TYPE!r}, got {stmt.get('predicateType')!r}"
+            f"statement predicateType {pt!r} is not a supported Workproof predicate type; "
+            f"supported: {sorted(SUPPORTED_PREDICATE_TYPES.values())!r}"
         )
 
     # Critical: the embedded statement must canonically hash to the payload.

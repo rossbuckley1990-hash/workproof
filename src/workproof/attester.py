@@ -61,7 +61,7 @@ def build_statement(
     env = entries[-1].get("environment_fingerprint", {}) if entries else {}
 
     predicate: dict[str, Any] = {
-        "schema_version": "0.1",
+        "schema_version": "0.2",
         "base_sha": base_sha,
         "head_sha": head_sha,
         "files_changed": files_changed,

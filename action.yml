@@ -18,6 +18,10 @@ inputs:
     description: "If 'true', fail the job when verification returns INCOMPLETE (exit 2). TAMPERED (exit 1) always fails."
     required: false
     default: "true"
+  version:
+    description: "Workproof version to install. A git tag (e.g. 'v0.1.0') or 'latest'. Defaults to 'v0.1.0' for reproducibility."
+    required: false
+    default: "v0.1.0"
   github-token:
     description: "GitHub token for posting the sticky comment and commit status. Defaults to the automatically-provided GITHUB_TOKEN."
     required: false
@@ -28,9 +32,17 @@ runs:
   steps:
     - name: Install Workproof
       shell: bash
+      env:
+        WORKPROOF_VERSION: ${{ inputs.version }}
       run: |
         python3 -m pip install --upgrade pip
-        python3 -m pip install workproof-cli
+        # Install from the pinned git tag. workproof-cli is not yet on PyPI;
+        # see RELEASING.md for the PyPI migration plan.
+        if [ "$WORKPROOF_VERSION" = "latest" ]; then
+          python3 -m pip install "git+https://github.com/rossbuckley1990-hash/workproof"
+        else
+          python3 -m pip install "git+https://github.com/rossbuckley1990-hash/workproof@$WORKPROOF_VERSION"
+        fi
 
     - name: Resolve PR head SHA
       id: head
