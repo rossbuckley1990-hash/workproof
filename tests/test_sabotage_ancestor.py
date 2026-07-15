@@ -176,29 +176,54 @@ class TestSabotageViaAncestor:
         )
         assert "INCOMPLETE" in r.output
 
-    def test_honest_receipt_verifies_under_pr_body(self, sabotage_repo) -> None:
-        """Control: receipt for Y (the actual PR head) verifies against Y.
+    def test_honest_receipt_verifies_under_pr_body(self, tmp_path, monkeypatch) -> None:
+        """Control: receipt for the PR head verifies against the PR head.
 
         This confirms the fix doesn't break the honest workflow: the contributor
-        commits Y, records evidence against Y, attests against Y, pastes into PR body.
+        commits, records evidence against the commit, attests against it, pastes
+        into PR body. Uses a FRESH repo (not the sabotage fixture) to avoid
+        any state pollution from the sabotage tests.
         """
-        repo, _commit_x, _commit_y, _ = sabotage_repo
+        home = tmp_path / "home"
+        home.mkdir()
+        repo = tmp_path / "honest-repo"
+        repo.mkdir()
+        monkeypatch.setenv("HOME", str(home))
 
-        # Fix the sabotage, commit Z, record evidence against Z, attest against Z
-        (repo / "calc.py").write_text("def add(a, b):\n    return a + b\n", encoding="utf-8")
+        import workproof.keyring as kr
+
+        monkeypatch.setattr(kr, "DEFAULT_KEYRING_DIR", home / ".workproof")
+        monkeypatch.setattr(kr, "PRIVATE_KEY_PATH", home / ".workproof" / "id_ed25519")
+        monkeypatch.setattr(kr, "PUBLIC_KEY_PATH", home / ".workproof" / "id_ed25519.pub")
+        monkeypatch.chdir(repo)
+
+        subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+        subprocess.run(["git", "config", "user.email", "t@t.com"], cwd=repo, check=True)
+        subprocess.run(["git", "config", "user.name", "t"], cwd=repo, check=True)
+        subprocess.run(["git", "config", "commit.gpgsign", "false"], cwd=repo, check=True)
+
+        # Base commit
+        (repo / ".workproof.yml").write_text(
+            'policy_version: "0.1"\nallowed_commands:\n  - pytest\n  - python -m pytest\n  - python3 -m pytest\n',
+            encoding="utf-8",
+        )
+        (repo / ".gitignore").write_text(".workproof/\n", encoding="utf-8")
         subprocess.run(["git", "add", "-A"], cwd=repo, check=True)
-        subprocess.run(["git", "commit", "-q", "-m", "Z: fixed"], cwd=repo, check=True)
-        commit_z = subprocess.run(
+        subprocess.run(["git", "commit", "-q", "-m", "base"], cwd=repo, check=True)
+
+        # Head commit: working code
+        (repo / "calc.py").write_text("def add(a, b):\n    return a + b\n", encoding="utf-8")
+        (repo / "test_calc.py").write_text(
+            "from calc import add\n\ndef test_add():\n    assert add(2, 3) == 5\n", encoding="utf-8"
+        )
+        subprocess.run(["git", "add", "-A"], cwd=repo, check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "working code"], cwd=repo, check=True)
+        head = subprocess.run(
             ["git", "rev-parse", "HEAD"], cwd=repo, capture_output=True, text=True, check=True
         ).stdout.strip()
 
-        # Reset session (gitignored, so deletion doesn't affect the tree)
-        session_path = repo / ".workproof" / "session.jsonl"
-        if session_path.exists():
-            session_path.unlink()
-
+        runner.invoke(app, ["init"])
         runner.invoke(app, ["run", "--", "python3", "-m", "pytest", "-q"])
-
         result = runner.invoke(
             app, ["attest", "--ai-level", "assisted", "--agent", "honest", "--emit", "pr-body"]
         )
@@ -212,7 +237,7 @@ class TestSabotageViaAncestor:
         tmp_receipt.write_text(receipt_json, encoding="utf-8")
         r = runner.invoke(
             app,
-            ["verify", str(tmp_receipt), "--repo", str(repo), "--expected-head-sha", commit_z],
+            ["verify", str(tmp_receipt), "--repo", str(repo), "--expected-head-sha", head],
         )
-        assert r.exit_code == 0, f"Honest receipt for Z should verify:\n{r.output}"
+        assert r.exit_code == 0, f"Honest receipt should verify:\n{r.output}"
         assert "VERIFIED" in r.output
