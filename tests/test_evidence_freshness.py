@@ -45,7 +45,7 @@ def _setup_repo(repo: Path, home: Path, monkeypatch) -> None:
         'policy_version: "0.1"\nallowed_commands:\n  - pytest\n  - python -m pytest\n  - python3 -m pytest\n',
         encoding="utf-8",
     )
-    (repo / ".gitignore").write_text(".workproof/\n", encoding="utf-8")
+    (repo / ".gitignore").write_text(".workproof/\n__pycache__/\n*.pyc\n", encoding="utf-8")
     subprocess.run(["git", "add", "-A"], cwd=repo, check=True)
     subprocess.run(["git", "commit", "-q", "-m", "base"], cwd=repo, check=True)
 

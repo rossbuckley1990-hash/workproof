@@ -74,7 +74,9 @@ def init(
     Also ensures ``.workproof/`` is in ``.gitignore`` so runtime artifacts
     don't pollute the tree (which would break evidence_freshness).
     """
-    # 0. Ensure .workproof/ is gitignored
+    # 0. Ensure .workproof/ is in .gitignore (don't add other entries —
+    # the user's .gitignore is theirs to manage; we only need .workproof/
+    # excluded so our runtime artifacts don't pollute the tree hash)
     gitignore = Path(".gitignore")
     wp_line = ".workproof/"
     if gitignore.exists():
@@ -84,7 +86,7 @@ def init(
             typer.echo(f"  ✓ added {wp_line!r} to {gitignore}")
     else:
         gitignore.write_text(wp_line + "\n", encoding="utf-8")
-        typer.echo(f"  ✓ wrote {gitignore} (ignores {wp_line!r})")
+        typer.echo(f"  ✓ wrote {gitignore}")
 
     # 1. Policy file
     policy_path = Path(DEFAULT_POLICY_PATH)
