@@ -94,6 +94,10 @@ name: Workproof
 on:
   pull_request:
     branches: [main]
+permissions:
+  contents: read
+  pull-requests: write  # post + update the sticky comment
+  statuses: write       # set the Workproof commit status
 jobs:
   verify:
     runs-on: ubuntu-latest
