@@ -54,6 +54,8 @@ def sabotage_repo(tmp_path, monkeypatch):
         'policy_version: "0.1"\nallowed_commands:\n  - pytest\n  - python -m pytest\n  - python3 -m pytest\n',
         encoding="utf-8",
     )
+    # .gitignore so .workproof/ artifacts don't pollute the tree
+    (repo / ".gitignore").write_text(".workproof/\n", encoding="utf-8")
     subprocess.run(["git", "add", "-A"], cwd=repo, check=True)
     subprocess.run(["git", "commit", "-q", "-m", "base"], cwd=repo, check=True)
 
@@ -190,25 +192,10 @@ class TestSabotageViaAncestor:
             ["git", "rev-parse", "HEAD"], cwd=repo, capture_output=True, text=True, check=True
         ).stdout.strip()
 
-        # Reset session and record against Z (clean tree)
-        # Remove session file and commit the removal so the tree is clean
+        # Reset session (gitignored, so deletion doesn't affect the tree)
         session_path = repo / ".workproof" / "session.jsonl"
         if session_path.exists():
             session_path.unlink()
-        # Also remove any receipts from the X attestations
-        receipts_dir = repo / ".workproof" / "receipts"
-        if receipts_dir.exists():
-            import shutil
-
-            shutil.rmtree(receipts_dir)
-        subprocess.run(["git", "add", "-A"], cwd=repo, check=True)
-        subprocess.run(
-            ["git", "commit", "-q", "-m", "clean up workproof artifacts"], cwd=repo, check=True
-        )
-        # Re-derive HEAD (the cleanup commit is now the attest target)
-        commit_z = subprocess.run(
-            ["git", "rev-parse", "HEAD"], cwd=repo, capture_output=True, text=True, check=True
-        ).stdout.strip()
 
         runner.invoke(app, ["run", "--", "python3", "-m", "pytest", "-q"])
 
