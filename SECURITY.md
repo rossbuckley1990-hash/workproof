@@ -5,19 +5,60 @@
 A Workproof receipt is a signed in-toto Statement that proves **specific
 commands ran against a specific git tree and produced specific outputs**.
 
-Concretely, a verified receipt means:
+Each numbered claim maps to a named verifier check. If a check is skipped
+(missing `--repo`, `--policy`, or `--expected-head-sha`), it renders as
+`○ skipped` in the output and is never counted as a pass. A receipt is only
+`VERIFIED` when every applicable check passes.
 
-1. The contributor ran `workproof run -- <cmd>` and the command exited with
-   the recorded exit code.
-2. The command ran against a working tree whose HEAD SHA is recorded in the
-   receipt; the dirty-diff sha256 is also recorded.
-3. The stdout and stderr hashes match what was captured.
-4. The session entries are hash-chained and the chain is intact.
-5. The receipt was signed with an ed25519 key whose public half is embedded.
-6. The declared AI level (none / assisted / agent) and agent name are
-   attested under signature.
-7. Counts of removed assertions and new skip/xfail markers are reported with
-   file:line anchors.
+1. **Specific commands ran with recorded exit codes.**
+   → `hash_chain` check: entries are intact and hash-chained. Each entry's
+   `argv` and `exit_code` are under the signature. (Schema 0.1+)
+
+2. **Commands ran against the attested tree (not a different commit, not a dirty tree).**
+   → `evidence_freshness` check (schema 0.2 only): every entry's
+   `git.head_sha` must equal the receipt's subject SHA, AND
+   `git.dirty_diff_sha256` must equal `sha256("")` (clean working tree).
+   This is the anti-laundering check — without it, a contributor could record
+   evidence on commit A and attest it against commit B. Schema 0.1 receipts
+   skip this check with a visible `○ skipped` status; the reviewer sees the gap.
+
+3. **The stdout and stderr hashes match what was captured.**
+   → `receipt_structure` + `signature` checks: the payload is the canonical
+   serialization of the statement, and the signature covers the payload. Any
+   tampering with stdout/stderr hashes breaks the signature. (Schema 0.1+)
+
+4. **The session entries are hash-chained and the chain is intact.**
+   → `hash_chain` check: recomputes every entry's hash and verifies the
+   `prev_hash` links. Detects tampering, reordering, insertion, deletion.
+   (Schema 0.1+)
+
+5. **The receipt was signed with an ed25519 key whose public half is embedded.**
+   → `signature` check: verifies the detached ed25519 signature against the
+   embedded public key. (Schema 0.1+)
+
+6. **The receipt's subject SHA matches the PR head (or is an ancestor of it).**
+   → `head_sha` check: the receipt's `subject.gitSha` must match
+   `--expected-head-sha` exactly, or (with `--allow-ancestor`) be an ancestor
+   of it. Prevents replay across PRs. (Schema 0.1+)
+
+7. **Declared commands are a subset of project policy.**
+   → `command_policy` check: every recorded `argv` must match an entry in
+   `.workproof.yml`'s `allowed_commands`. Prevents attesting commands the
+   project didn't authorize. (Schema 0.1+; skipped if no `--policy` given)
+
+8. **The declared AI level and agent name are attested under signature.**
+   → `ai_declaration` check (informational): reads `ai_level` and `agent`
+   from the signed predicate. Self-declared; Workproof does not verify
+   honesty. (Schema 0.1+)
+
+9. **Counts of removed assertions and new skip/xfail markers are reported.**
+   → `heuristics` check (informational, never fails verification): reports
+   counts with file:line anchors. The reviewer decides if the changes are
+   justified. (Schema 0.1+)
+
+**Important:** claims 1–7 are enforcement checks that can fail verification
+(exit 1 or 2). Claims 8–9 are informational — they never change the exit code,
+because Workproof refuses to be the jury on intent.
 
 ## What Workproof does NOT prove
 

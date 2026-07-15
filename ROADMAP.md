@@ -58,6 +58,14 @@ keys, so reviewers don't have to trust a key embedded in the receipt alone.
 Keys are added via PR to the registry; keys are removed via PR + signed
 revocation.
 
+## v0.2.1 — Single-commit repo support (papercut)
+
+`workproof attest` currently errors on a single-commit repo because it tries
+to resolve `HEAD~1` as the base SHA. A stranger's first five minutes shouldn't
+hit that. Fix: if `HEAD~1` doesn't exist, use the empty tree SHA as the base
+(attesting the entire repo history as a single change). Low priority but
+removes a first-run papercut.
+
 ## Not on the roadmap (ever)
 
 - **SaaS, dashboard, auth, billing.** Workproof is a CLI + Action. No

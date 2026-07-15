@@ -1,13 +1,17 @@
 # Receipt Schema
 
-Workproof v0.1 receipts are [DSSE-style envelopes](https://github.com/secure-systems-lab/dsse)
+Workproof receipts are [DSSE-style envelopes](https://github.com/secure-systems-lab/dsse)
 wrapping [in-toto Statements](https://github.com/in-toto/statements).
+
+**Current schema: `0.2`** (adds the `evidence_freshness` verifier check).
+Schema `0.1` receipts are still accepted by the verifier; they skip the
+freshness check with a visible `○ skipped` status.
 
 ## Top-level envelope
 
 ```json
 {
-  "schema_version": "0.1",
+  "schema_version": "0.2",
   "payload_type": "application/vnd.in-toto+json",
   "payload": "<base64 of canonical JSON of statement>",
   "signatures": [
@@ -25,7 +29,7 @@ wrapping [in-toto Statements](https://github.com/in-toto/statements).
 
 | Field | Type | Description |
 |---|---|---|
-| `schema_version` | string | `"0.1"`. Verification refuses unknown versions. Forward-compatible: v0.2 receipts will use `"0.2"` and the v0.1 verifier will refuse them (not best-effort parse). |
+| `schema_version` | string | `"0.1"` or `"0.2"`. Verification refuses unknown versions. Schema 0.2 adds the `evidence_freshness` check; 0.1 skips it with `○ skipped`. |
 | `payload_type` | string | Always `"application/vnd.in-toto+json"` (DSSE standard). |
 | `payload` | string (base64) | Base64 of the canonical JSON serialization of `statement`. The signature is over these bytes. |
 | `signatures` | array | One signature in v0.1. Future versions may add sigstore certificates. |
@@ -48,7 +52,7 @@ wrapping [in-toto Statements](https://github.com/in-toto/statements).
       }
     }
   ],
-  "predicateType": "https://workproof.dev/spec/v0.1",
+  "predicateType": "https://workproof.dev/spec/v0.2",
   "predicate": { ... Workproof-specific predicate ... }
 }
 ```
@@ -61,16 +65,16 @@ pointing to the same value, for compatibility with in-toto tooling.
 
 ### PredicateType
 
-`https://workproof.dev/spec/v0.1` — a versioned URI. No server exists at this
+`https://workproof.dev/spec/v0.2` — a versioned URI. No server exists at this
 URL today; the URI is a namespaced identifier, following in-toto convention.
-Future versions will use `v0.2`, `v0.3`, etc. Verification of v0.1 receipts
-must never break when v0.2 is released.
+Schema 0.1 uses `https://workproof.dev/spec/v0.1`; both are accepted.
+Verification of 0.1 receipts must never break when 0.2 is released.
 
 ## Predicate
 
 ```json
 {
-  "schema_version": "0.1",
+  "schema_version": "0.2",
   "base_sha": "<40-char hex>",
   "head_sha": "<40-char hex>",
   "files_changed": ["path/to/file.py", ...],
@@ -110,7 +114,7 @@ must never break when v0.2 is released.
 
 | Field | Type | Description |
 |---|---|---|
-| `schema_version` | string | Predicate schema version. Same as envelope `schema_version` in v0.1. |
+| `schema_version` | string | Predicate schema version. Matches envelope `schema_version`. |
 | `base_sha` | string | The base git SHA (PR target's merge-base with head). |
 | `head_sha` | string | The head git SHA (PR's head commit). Must match `subject[0].digest.gitSha`. |
 | `files_changed` | array<string> | All paths touched base..head, sorted, deduplicated. |
@@ -166,9 +170,22 @@ json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 Then encoded as UTF-8. This is the same rule used by in-toto and DSSE.
 
+## What changed in 0.2
+
+Schema 0.2 adds the `evidence_freshness` verifier check. No new data fields
+were added — the `git.head_sha` and `git.dirty_diff_sha256` fields were
+already present in 0.1 entries, but the 0.1 verifier did not check them.
+
+The 0.2 verifier enforces:
+- Every entry's `git.head_sha` must equal the receipt's subject SHA.
+- Every entry's `git.dirty_diff_sha256` must equal `sha256("")` (clean tree).
+
+This closes the evidence-laundering gap: a contributor can no longer record
+evidence on commit A and attest it against commit B.
+
 ## Forward compatibility
 
-Verification of v0.1 receipts must never break when:
+Verification of 0.1 receipts must never break when:
 
 - v0.2 is released with keyless signing support. The v0.2 verifier must still
   accept v0.1 receipts signed with embedded ed25519 keys.

@@ -361,13 +361,19 @@ def _git_sha(repo: Path, ref: str) -> str:
 
 
 def _print_verification_result(result: VerificationResult) -> None:
-    """Render a VerificationResult to stdout in a human-friendly table."""
-    icon = {"pass": "✓", "fail": "✗", "warn": "⚠"}
+    """Render a VerificationResult to stdout in a human-friendly table.
+
+    Skipped checks render as '⚠ skipped' so the reviewer never mistakes a
+    skipped check for a passed one. This is the anti-overclaim contract.
+    """
+    icon = {"pass": "✓", "fail": "✗", "warn": "⚠", "skip": "○"}
+    label_prefix = {"pass": "", "fail": "", "warn": "", "skip": "skipped: "}
     typer.echo("")
     typer.echo("Workproof verification")
     typer.echo("─────────────────────────────────────────────────────────────")
     for name, status, detail in result.checks:
-        typer.echo(f"  {icon.get(status, '?')} {name:24s}  {detail}")
+        prefix = label_prefix.get(status, "")
+        typer.echo(f"  {icon.get(status, '?')} {name:24s}  {prefix}{detail}")
     typer.echo("─────────────────────────────────────────────────────────────")
     label = {
         EXIT_VERIFIED: "VERIFIED",
