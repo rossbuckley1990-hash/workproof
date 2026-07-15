@@ -85,3 +85,23 @@ Per the style guide. Every heuristic has `test_<name>_true_positive` and
 `test_<name>_known_false_positive`, the latter documenting the documented
 limitation in the test docstring. This is the project's honesty contract
 with itself.
+
+## D13 — Receipts live outside the tree (--emit=pr-body default)
+
+The original design committed receipts into `.workproof/receipts/` inside the
+git tree. This created a chicken-and-egg: the receipt attests commit X, but
+the receipt file itself is committed as commit Y on top of X. The
+`--allow-ancestor` flag was added to work around this, but it re-open the
+evidence-laundering hole (receipt on parent X, sabotaged code in child Y,
+`verify --allow-ancestor` returns VERIFIED).
+
+The fix is architectural: receipts live OUTSIDE the tree they describe.
+- `--emit=pr-body` (default): prints JSON in a fenced code block for pasting
+  into the PR body. The Action parses it from there.
+- `--emit=notes`: writes to `refs/notes/workproof`. Pushed separately.
+- `--emit=file`: writes to `.workproof/receipts/` (legacy; warns not to
+  commit into the tree).
+
+With receipts outside the tree, the attested commit IS the PR head — exact
+SHA match, no ancestor logic, no laundering gap. The `--allow-ancestor` flag
+was deleted entirely.
