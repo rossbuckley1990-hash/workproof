@@ -65,9 +65,9 @@ def get_working_tree_hash(repo: Path) -> str:
     ``git rev-parse <subject_sha>^{tree}`` — if they match, the evidence was
     recorded against the same tree state as the attested commit.
 
-    Implementation: backs up the user's index, stages all working tree changes,
-    writes the tree, then restores the index from the backup. The user's
-    staging area is preserved exactly.
+    Implementation: backs up the user's index, stages all changes with
+    `git add -A`, writes the tree, then restores the index from the backup.
+    The user's staging area is preserved exactly.
     """
     import shutil
 
@@ -75,7 +75,10 @@ def get_working_tree_hash(repo: Path) -> str:
     index_path = git_dir / "index"
     backup_path = git_dir / "workproof-index-backup"
 
-    # If there's no index yet (fresh repo with no commits), just write-tree
+    # Ensure filemode is off so tree hashes are consistent across OSes
+    _git(repo, "config", "core.filemode", "false")
+
+    # If there's no index yet (fresh repo with no commits), just add + write
     if not index_path.exists():
         _git(repo, "add", "-A")
         return _git(repo, "write-tree")
@@ -87,9 +90,7 @@ def get_working_tree_hash(repo: Path) -> str:
         return ""
 
     try:
-        # Stage all working tree changes
         _git(repo, "add", "-A")
-        # Write the tree that captures the working tree state
         return _git(repo, "write-tree")
     finally:
         # Restore the user's index from the backup
