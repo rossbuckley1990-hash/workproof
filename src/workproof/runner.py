@@ -16,7 +16,6 @@ blobs are written alongside.
 
 from __future__ import annotations
 
-import contextlib
 import gzip
 import os
 import platform
@@ -61,44 +60,44 @@ def get_head_sha(repo: Path) -> str:
 def get_working_tree_hash(repo: Path) -> str:
     """Return the git tree hash of the current working tree state.
 
-    Uses ``git write-tree`` via a TEMP index file so the user's real index is
-    never mutated. The tree hash captures the exact state of the working tree
-    (including uncommitted edits) at the moment the command ran.
+    Captures the exact state of the working tree (including uncommitted edits)
+    at the moment the command ran. At verify time, this is compared to
+    ``git rev-parse <subject_sha>^{tree}`` — if they match, the evidence was
+    recorded against the same tree state as the attested commit.
 
-    At verify time, this is compared to ``git rev-parse <subject_sha>^{tree}`` —
-    if they match, the evidence was recorded against the same tree state as the
-    attested commit. This replaces the old dirty-diff check, which incorrectly
-    required a clean tree (forcing contributors to commit before testing).
+    Implementation: backs up the user's index, stages all working tree changes,
+    writes the tree, then restores the index from the backup. The user's
+    staging area is preserved exactly.
     """
+    import shutil
+
     git_dir = repo / ".git"
-    if not git_dir.exists():
-        return ""
-    tmp_index = str(git_dir / "workproof-tmp-index")
-    env = {**os.environ, "GIT_INDEX_FILE": tmp_index}
+    index_path = git_dir / "index"
+    backup_path = git_dir / "workproof-index-backup"
+
+    # If there's no index yet (fresh repo with no commits), just write-tree
+    if not index_path.exists():
+        _git(repo, "add", "-A")
+        return _git(repo, "write-tree")
+
+    # Back up the user's index
     try:
-        # Load HEAD as base, then stage working tree changes, then write tree.
-        _git_env(repo, env, "read-tree", "HEAD")
-        _git_env(repo, env, "add", "-A")
-        return _git_env(repo, env, "write-tree")
-    except Exception:
+        shutil.copy2(index_path, backup_path)
+    except OSError:
         return ""
+
+    try:
+        # Stage all working tree changes
+        _git(repo, "add", "-A")
+        # Write the tree that captures the working tree state
+        return _git(repo, "write-tree")
     finally:
-        with contextlib.suppress(OSError):
-            os.unlink(tmp_index)
-
-
-def _git_env(repo: Path, env: dict, *args: str) -> str:
-    """Run a git command with a custom environment."""
-    out = subprocess.run(
-        ["git", *args],
-        cwd=str(repo),
-        capture_output=True,
-        text=True,
-        check=True,
-        timeout=30,
-        env=env,
-    )
-    return out.stdout.strip()
+        # Restore the user's index from the backup
+        try:
+            shutil.copy2(backup_path, index_path)
+            os.unlink(backup_path)
+        except OSError:
+            pass
 
 
 def environment_fingerprint(declared_tools: dict[str, str] | None = None) -> dict[str, Any]:
