@@ -71,7 +71,21 @@ def init(
 
     Idempotent: refuses to overwrite an existing keypair unless ``--force``
     is given. The session file (``.workproof/session.jsonl``) is reset.
+    Also ensures ``.workproof/`` is in ``.gitignore`` so runtime artifacts
+    don't pollute the tree (which would break evidence_freshness).
     """
+    # 0. Ensure .workproof/ is gitignored
+    gitignore = Path(".gitignore")
+    wp_line = ".workproof/"
+    if gitignore.exists():
+        content = gitignore.read_text(encoding="utf-8")
+        if wp_line not in content:
+            gitignore.write_text(content.rstrip() + "\n" + wp_line + "\n", encoding="utf-8")
+            typer.echo(f"  ✓ added {wp_line!r} to {gitignore}")
+    else:
+        gitignore.write_text(wp_line + "\n", encoding="utf-8")
+        typer.echo(f"  ✓ wrote {gitignore} (ignores {wp_line!r})")
+
     # 1. Policy file
     policy_path = Path(DEFAULT_POLICY_PATH)
     if policy_path.exists() and not force:

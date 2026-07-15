@@ -16,7 +16,9 @@ blobs are written alongside.
 
 from __future__ import annotations
 
+import contextlib
 import gzip
+import os
 import platform
 import subprocess
 import sys
@@ -56,13 +58,47 @@ def get_head_sha(repo: Path) -> str:
     return _git(repo, "rev-parse", "HEAD")
 
 
-def get_dirty_diff_hash(repo: Path) -> str:
-    """sha256 of the working-tree diff vs HEAD. Empty string if no git/no diff."""
-    diff = _git(repo, "diff", "HEAD")
-    if not diff:
-        # also check untracked? No — only tracked-dirty state, deterministic.
-        return sha256_bytes(b"")
-    return sha256_bytes(diff.encode("utf-8"))
+def get_working_tree_hash(repo: Path) -> str:
+    """Return the git tree hash of the current working tree state.
+
+    Uses ``git write-tree`` via a TEMP index file so the user's real index is
+    never mutated. The tree hash captures the exact state of the working tree
+    (including uncommitted edits) at the moment the command ran.
+
+    At verify time, this is compared to ``git rev-parse <subject_sha>^{tree}`` —
+    if they match, the evidence was recorded against the same tree state as the
+    attested commit. This replaces the old dirty-diff check, which incorrectly
+    required a clean tree (forcing contributors to commit before testing).
+    """
+    git_dir = repo / ".git"
+    if not git_dir.exists():
+        return ""
+    tmp_index = str(git_dir / "workproof-tmp-index")
+    env = {**os.environ, "GIT_INDEX_FILE": tmp_index}
+    try:
+        # Load HEAD as base, then stage working tree changes, then write tree.
+        _git_env(repo, env, "read-tree", "HEAD")
+        _git_env(repo, env, "add", "-A")
+        return _git_env(repo, env, "write-tree")
+    except Exception:
+        return ""
+    finally:
+        with contextlib.suppress(OSError):
+            os.unlink(tmp_index)
+
+
+def _git_env(repo: Path, env: dict, *args: str) -> str:
+    """Run a git command with a custom environment."""
+    out = subprocess.run(
+        ["git", *args],
+        cwd=str(repo),
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=30,
+        env=env,
+    )
+    return out.stdout.strip()
 
 
 def environment_fingerprint(declared_tools: dict[str, str] | None = None) -> dict[str, Any]:
@@ -209,7 +245,7 @@ def _build_entry(
 ) -> dict[str, Any]:
     """Construct the entry dict (without hash/prev_hash — Session.append adds those)."""
     head_sha = get_head_sha(repo)
-    dirty_hash = get_dirty_diff_hash(repo)
+    tree_hash = get_working_tree_hash(repo)
     cwd_rel = _relative_cwd(repo)
     return {
         "kind": "command",
@@ -217,7 +253,7 @@ def _build_entry(
         "cwd_relative": cwd_rel,
         "git": {
             "head_sha": head_sha,
-            "dirty_diff_sha256": dirty_hash,
+            "tree_hash": tree_hash,
         },
         "started_at": started,
         "ended_at": ended,

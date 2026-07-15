@@ -20,7 +20,6 @@ skipped check for a passed one.
 
 from __future__ import annotations
 
-import hashlib
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -39,10 +38,6 @@ from workproof.receipt import (
 EXIT_VERIFIED = 0
 EXIT_TAMPERED = 1
 EXIT_INCOMPLETE = 2
-
-# sha256 of empty bytes — the dirty_diff_sha256 value that indicates a clean
-# working tree at evidence-recording time.
-CLEAN_TREE_HASH = hashlib.sha256(b"").hexdigest()
 
 # Schema 0.2 predicateType — receipts with this type get the evidence_freshness check
 PREDICATE_TYPE_02 = SUPPORTED_PREDICATE_TYPES["0.2"]
@@ -127,47 +122,71 @@ def verify_receipt(
         return result
 
     # ---- 3b. Evidence freshness (schema 0.2 only) ----
-    # This is the anti-laundering check. Every entry records the git HEAD SHA
-    # and the dirty-diff hash at the moment the command ran. For the receipt to
-    # be honest, every entry must have been recorded against the SAME tree as
-    # the receipt's subject (head_sha), AND the tree must have been clean
-    # (dirty_diff_sha256 == sha256("")). Otherwise the evidence was recorded on
-    # a different tree than the one being attested — classic evidence laundering.
+    # Anti-laundering check via TREE EQUALITY, not clean-tree.
     #
-    # Schema 0.1 receipts predate this check; they skip it with a warning so
-    # old receipts still verify (forward-compat), but the reviewer sees the gap.
+    # Every entry records the git tree hash (git write-tree) at the moment the
+    # command ran. At verify time, we compare that to the subject commit's tree
+    # (git rev-parse <sha>^{tree}). If they match, the evidence was recorded
+    # against the same tree state as the attested commit — regardless of whether
+    # the tree was "clean" (committed) or "dirty" (uncommitted edits) at run time.
+    #
+    # This is the correct check because:
+    # - Honest workflow (edit → test → commit): the working tree at test time
+    #   IS the same tree the commit captures. Tree hashes match. Verifies.
+    # - Sabotage (test on X, commit Y with different code): trees differ. Fails.
+    # - Dirty-then-different (edit A → test → edit B → commit): trees differ. Fails.
+    #
+    # The old check (dirty_diff_sha256 == sha256("")) was wrong because it
+    # required a clean tree, forcing contributors to commit before testing —
+    # nobody works that way.
+    #
+    # Schema 0.1 receipts predate this check; they skip it with a visible
+    # "skip" status so the reviewer sees the gap.
     subject_sha = _extract_head_sha(receipt.statement)
     predicate_type = receipt.statement.get("predicateType", "")
     if predicate_type == PREDICATE_TYPE_02:
-        stale_entries = []
-        for i, e in enumerate(entries):
-            entry_git = e.get("git", {})
-            entry_head = entry_git.get("head_sha", "")
-            entry_dirty = entry_git.get("dirty_diff_sha256", "")
-            if entry_head != subject_sha:
-                stale_entries.append(
-                    f"entry {i}: head_sha {entry_head[:12]!r} ≠ subject {subject_sha[:12]!r}"
-                )
-            elif entry_dirty != CLEAN_TREE_HASH:
-                stale_entries.append(
-                    f"entry {i}: dirty working tree (dirty_diff_sha256={entry_dirty[:12]!r})"
-                )
-        if stale_entries:
-            detail = "; ".join(stale_entries)
-            result.add("evidence_freshness", "fail", detail)
-            result.exit_code = EXIT_INCOMPLETE
-            result.diagnosis = (
-                f"Evidence laundering detected: {detail}. "
-                f"Evidence was recorded on a different tree than the attested commit. "
-                f"The receipt does not prove the declared commands ran against this commit."
-            )
-            return result
-        else:
+        if repo is None:
             result.add(
                 "evidence_freshness",
-                "pass",
-                f"{len(entries)} entry/entries all recorded against subject SHA, clean tree",
+                "skip",
+                "no --repo provided; cannot compute subject tree hash for comparison",
             )
+        else:
+            subject_tree = _git_tree_hash(repo, subject_sha)
+            if not subject_tree:
+                result.add(
+                    "evidence_freshness",
+                    "skip",
+                    f"cannot resolve tree for subject SHA {subject_sha[:12]!r} (not in repo?)",
+                )
+            else:
+                stale_entries = []
+                for i, e in enumerate(entries):
+                    entry_git = e.get("git", {})
+                    entry_tree = entry_git.get("tree_hash", "")
+                    if not entry_tree:
+                        # Old-format entry (pre-tree_hash) — can't verify freshness
+                        stale_entries.append(f"entry {i}: missing tree_hash (old format)")
+                    elif entry_tree != subject_tree:
+                        stale_entries.append(
+                            f"entry {i}: tree_hash {entry_tree[:12]!r} ≠ subject tree {subject_tree[:12]!r}"
+                        )
+                if stale_entries:
+                    detail = "; ".join(stale_entries)
+                    result.add("evidence_freshness", "fail", detail)
+                    result.exit_code = EXIT_INCOMPLETE
+                    result.diagnosis = (
+                        f"Evidence laundering detected: {detail}. "
+                        f"Evidence was recorded on a different tree than the attested commit. "
+                        f"The receipt does not prove the declared commands ran against this commit."
+                    )
+                    return result
+                else:
+                    result.add(
+                        "evidence_freshness",
+                        "pass",
+                        f"{len(entries)} entry/entries all match subject tree {subject_tree[:12]}",
+                    )
     elif predicate_type == PREDICATE_TYPE_01:
         result.add(
             "evidence_freshness",
@@ -328,6 +347,30 @@ def _git_head_sha(repo: Path) -> str:
             timeout=10,
         )
         return out.stdout.strip()
+    except (subprocess.SubprocessError, FileNotFoundError):
+        return ""
+
+
+def _git_tree_hash(repo: Path, sha: str) -> str:
+    """Return the tree hash of a commit: ``git rev-parse <sha>^{tree}``.
+
+    Used by the evidence_freshness check to compare the entry's recorded
+    working-tree hash against the attested commit's tree.
+    """
+    if not sha:
+        return ""
+    import subprocess
+
+    try:
+        out = subprocess.run(
+            ["git", "rev-parse", f"{sha}^{{tree}}"],
+            cwd=str(repo),
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=10,
+        )
+        return out.stdout.strip() if out.returncode == 0 else ""
     except (subprocess.SubprocessError, FileNotFoundError):
         return ""
 
