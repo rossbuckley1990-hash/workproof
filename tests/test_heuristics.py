@@ -41,6 +41,7 @@ def _init_repo(repo: Path) -> None:
     subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
     _git(repo, "config", "user.email", "t@t.com")
     _git(repo, "config", "user.name", "t")
+    _git(repo, "config", "core.filemode", "false")
 
 
 def _commit(repo: Path, files: dict[str, str], msg: str) -> str:

@@ -43,6 +43,7 @@ def demo_workflow_env(tmp_path, monkeypatch):
     subprocess.run(["git", "config", "user.email", "demo@example.com"], cwd=repo, check=True)
     subprocess.run(["git", "config", "user.name", "Demo"], cwd=repo, check=True)
     subprocess.run(["git", "config", "commit.gpgsign", "false"], cwd=repo, check=True)
+    subprocess.run(["git", "config", "core.filemode", "false"], cwd=repo, check=True)
 
     # Base commit: buggy calculator
     (repo / "calculator.py").write_text(

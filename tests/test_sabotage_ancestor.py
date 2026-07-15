@@ -48,6 +48,7 @@ def sabotage_repo(tmp_path, monkeypatch):
     subprocess.run(["git", "config", "user.email", "t@t.com"], cwd=repo, check=True)
     subprocess.run(["git", "config", "user.name", "t"], cwd=repo, check=True)
     subprocess.run(["git", "config", "commit.gpgsign", "false"], cwd=repo, check=True)
+    subprocess.run(["git", "config", "core.filemode", "false"], cwd=repo, check=True)
 
     # Base commit
     (repo / ".workproof.yml").write_text(
@@ -201,6 +202,7 @@ class TestSabotageViaAncestor:
         subprocess.run(["git", "config", "user.email", "t@t.com"], cwd=repo, check=True)
         subprocess.run(["git", "config", "user.name", "t"], cwd=repo, check=True)
         subprocess.run(["git", "config", "commit.gpgsign", "false"], cwd=repo, check=True)
+        subprocess.run(["git", "config", "core.filemode", "false"], cwd=repo, check=True)
 
         # Base commit
         (repo / ".workproof.yml").write_text(
