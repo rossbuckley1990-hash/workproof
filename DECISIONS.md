@@ -105,3 +105,4 @@ The fix is architectural: receipts live OUTSIDE the tree they describe.
 With receipts outside the tree, the attested commit IS the PR head — exact
 SHA match, no ancestor logic, no laundering gap. The `--allow-ancestor` flag
 was deleted entirely.
+
